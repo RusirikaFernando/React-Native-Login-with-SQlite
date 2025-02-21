@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, Text, View,TextInput} from "react-native";
 import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer , NavigationIndependentTree} from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 
 
@@ -29,13 +29,15 @@ const Stack = createStackNavigator();
 export default function App() {
   return (
    <SQLiteProvider databaseName="auth.db" onInit={initializeDatabase}>
-    
+       <NavigationIndependentTree>
+     <NavigationContainer>
     <Stack.Navigator initialRouteName='Login'>
                 <Stack.Screen name='Login' component={LoginScreen}/>
                 <Stack.Screen name='Register' component={RegisterScreen}/>
                 <Stack.Screen name='Home' component={HomeScreen}/>
             </Stack.Navigator>
-    
+            </NavigationContainer>
+            </NavigationIndependentTree>
    </SQLiteProvider>
   );
 }
@@ -57,11 +59,11 @@ return(
   secureTextEntry
   />
 
-  <Pressable style={styles.button}>
+  <Pressable style={styles.button} onPress={()=> navigation.navigate('Home')}>
     <Text style={styles.buttonText}>Login</Text>
   </Pressable>
 
-  <Pressable style={styles.link}>
+  <Pressable style={styles.link} onPress={()=> navigation.navigate('Register')}>
     <Text style={styles.linkText}>Don't have an account? Register</Text>
   </Pressable>
 </View>
@@ -70,8 +72,37 @@ return(
 }
 
 //Register Screen component
-const RegisterScreen = () => {
+const RegisterScreen = ({navigation}) => {
+return (
+  <View style= {styles.container}>
+    <Text style={styles.title}>Register</Text>
+    <TextInput
+  style={styles.input}
+  placeholder="Username"
+  />
 
+   <TextInput
+  style={styles.input}
+  placeholder="Password"
+  secureTextEntry
+  />
+
+  <TextInput
+  style={styles.input}
+  placeholder="Confirm Password"
+  secureTextEntry
+  />
+
+<Pressable style={styles.button} onPress={()=> navigation.navigate('Home')}>
+    <Text style={styles.buttonText}>Register</Text>
+  </Pressable>
+
+  <Pressable style={styles.link} onPress={()=> navigation.navigate('Login')}>
+    <Text style={styles.linkText}>Already have an account? Login</Text>
+  </Pressable>
+  
+  </View>
+)
 }
 
 //HomeScreen component
