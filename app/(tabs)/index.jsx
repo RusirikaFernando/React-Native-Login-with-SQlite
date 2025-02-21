@@ -45,6 +45,36 @@ export default function App() {
 
 //Login Screen component
 const LoginScreen = ({navigation}) => {
+ const db = useSQLiteContext();
+ const [userName, setUserName] = useState('');
+const [password, setPassword] = useState(''); 
+
+// function to handle user login
+const handleLogin = async()=>{
+  if (userName.lenght ===0 || password.length ===0){
+    Alert.alert('Attention!', 'Please anter both username and password');
+    return;
+  }
+  try{
+    const user = await db.getFirstAsync(`SELECT * FROM users WHERE username = ? `, [userName]);
+    if(!user){
+      Alert.alert('Error', 'UserName does not exist !');
+      return;
+    }
+    const validUser = await db.getFirstAsync(`SELECT * FROM users WHERE username = ? AND password = ?`, [userName, password]);
+    if (validUser){
+      Alert.alert('Success', 'Login Successfull');
+      navigation.navigate('Home', {user:userName});
+      setUserName('');
+      setPassword('');
+
+    } else{
+      Alert.alert('Error', 'Incorrect Password !');
+    }
+  } catch(error){
+    console.log('Error during login :', error);
+  }
+}
 return(
 <View style= {styles.container}>
   <Text style={styles.title}>Login</Text>
@@ -52,15 +82,19 @@ return(
   <TextInput
   style={styles.input}
   placeholder="Username"
+  value={userName}
+  onChangeText={setUserName}
   />
 
    <TextInput
   style={styles.input}
   placeholder="Password"
   secureTextEntry
+  value={password}
+  onChangeText={setPassword}
   />
 
-  <Pressable style={styles.button} onPress={()=> navigation.navigate('Home')}>
+  <Pressable style={styles.button} onPress={handleLogin}>
     <Text style={styles.buttonText}>Login</Text>
   </Pressable>
 
