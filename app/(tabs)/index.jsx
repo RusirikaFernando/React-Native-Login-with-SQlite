@@ -179,16 +179,28 @@ return (
 
 //HomeScreen component
 const HomeScreen = ({navigation, route}) => {
+  const db = useSQLiteContext(); 
 
   // extract the user parameter from route.params
   const {user} = route.params;
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      // If you store session data, remove it (optional step)
+      await db.runAsync(`DELETE FROM users WHERE username = ?`, [user]);
+      navigation.navigate('Login');
+    } catch (error) {
+      console.log('Error during logout :', error);
+    }
+  };
+  
 return(
   <View style={styles.container}>
 
       <Text style={styles.title}>Home</Text>
       <Text style={styles.userText}>Welcome {user} !</Text>
       <Pressable style={styles.button} onPress={()=> navigation.navigate('Login')}>
-    <Text style={styles.buttonText}>Logout</Text>
+    <Text style={styles.buttonText} onPress={handleLogout}>Logout</Text>
   </Pressable>
   </View>
 )
