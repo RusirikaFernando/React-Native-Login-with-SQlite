@@ -3,24 +3,8 @@ import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
 import { NavigationContainer , NavigationIndependentTree} from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useState } from "react";
+import { initializeDatabase } from '../../database';
 
-
-
-//initiatize the database
-const initializeDatabase = async (db) => {
-  try {
-    await db.execAsync(`PRAGMA journal_mode = WAL;
-             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE,
-                password TEXT ); `
-              ); 
-              console.log('DATABASE INITIALIZED');
-
-  } catch (error) {
-    console.error("Error initializing database:", error);
-  }
-};
 
 // create stack navigator
 
@@ -42,6 +26,8 @@ export default function App() {
    </SQLiteProvider>
   );
 }
+
+
 
 //Login Screen component
 const LoginScreen = ({navigation}) => {
@@ -183,6 +169,16 @@ const HomeScreen = ({navigation, route}) => {
 
   // extract the user parameter from route.params
   const {user} = route.params;
+
+  const fetchAllUsers = async () => {
+    try {
+      const result = await db.getAllAsync('SELECT * FROM users');
+      console.log("All Users:", result);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  }; // If your database has multiple tables, repeat this function for each table.
+
   // Function to handle logout
   const handleLogout = async () => {
     try {
@@ -202,6 +198,11 @@ return(
       <Pressable style={styles.button} onPress={()=> navigation.navigate('Login')}>
     <Text style={styles.buttonText} onPress={handleLogout}>Logout</Text>
   </Pressable>
+
+  <Pressable style={styles.button} onPress={fetchAllUsers}>
+        <Text style={styles.buttonText}>Show Database in Console</Text>
+      </Pressable>
+
   </View>
 )
 }
