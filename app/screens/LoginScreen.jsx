@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View, TextInput, Alert } from "react-native";
+import { 
+  Pressable, 
+  StyleSheet, 
+  Text, 
+  View, 
+  TextInput, 
+  Alert, 
+  Image 
+} from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 const LoginScreen = ({ navigation }) => {
@@ -18,7 +26,10 @@ const LoginScreen = ({ navigation }) => {
         Alert.alert("Error", "Username does not exist!");
         return;
       }
-      const validUser = await db.getFirstAsync(`SELECT * FROM users WHERE username = ? AND password = ?`, [userName, password]);
+      const validUser = await db.getFirstAsync(
+        `SELECT * FROM users WHERE username = ? AND password = ?`, 
+        [userName, password]
+      );
       if (validUser) {
         Alert.alert("Success", "Login Successful");
         navigation.navigate("Home", { user: userName });
@@ -34,7 +45,14 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* App Icon */}
+      <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+
+      {/* Welcome Message */}
+      <Text style={styles.welcomeText}>Welcome to Creatinine Care</Text>
+
       <Text style={styles.title}>Login</Text>
+      
       <TextInput
         style={styles.input}
         placeholder="Username"
@@ -48,9 +66,11 @@ const LoginScreen = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
       />
+      
       <Pressable style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </Pressable>
+      
       <Pressable style={styles.link} onPress={() => navigation.navigate("Register")}>
         <Text style={styles.linkText}>Don't have an account? Register</Text>
       </Pressable>
@@ -64,6 +84,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
+  },
+  icon: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  },
+  welcomeText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 10,
   },
   title: {
     fontSize: 24,
