@@ -1,11 +1,36 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 const HomeScreen = ({ navigation, route }) => {
   const db = useSQLiteContext();
-  const { user } = route.params;
+  const { userId } = route.params; // Get userId from navigation params
+  const [username, setUsername] = useState(""); // State to store username
+  const [loading, setLoading] = useState(true);  // Add loading state
 
+  // Function to fetch username from database
+  const fetchUsername = async () => {
+    try {
+      const result = await db.getFirstAsync(
+        "SELECT username FROM users WHERE id = ?",
+        [userId]
+      );
+      if (result) {
+        setUsername(result.username); // Update state with fetched username
+      }
+    } catch (error) {
+      console.error("Error fetching username:", error);
+    } finally {
+      setLoading(false);  // Set loading to false when done
+    }
+  };
+
+  // Fetch username when the component loads
+  useEffect(() => {
+    fetchUsername();
+  }, []);
+
+  // Function to fetch all users (for debugging)
   const fetchAllUsers = async () => {
     try {
       const result = await db.getAllAsync("SELECT * FROM users");
@@ -13,24 +38,29 @@ const HomeScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error("Error fetching users:", error);
     }
-  }; // If your database has multiple tables, repeat this function for each table.
+  };
 
-    // Function to handle logout
-    const handleLogout = async () => {
-      try {
-        // If you store session data, remove it (optional step)
-        await db.runAsync(`DELETE FROM users WHERE username = ?`, [user]);
-        Alert.alert("Success", "Logout Successful");
-        navigation.navigate('Login');
-      } catch (error) {
-        console.log('Error during logout :', error);
-      }
-    };
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      await db.runAsync(`DELETE FROM users WHERE id = ?`, [userId]); // Use userId instead of username
+      Alert.alert("Success", "Logout Successful");
+      navigation.navigate("Login");
+    } catch (error) {
+      console.log("Error during logout:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
-      <Text style={styles.userText}>Welcome {user}!</Text>
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : (
+        <Text style={styles.userText}>
+          Welcome {username || 'User'}!
+        </Text>
+      )}
       <Pressable style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Logout</Text>
       </Pressable>
