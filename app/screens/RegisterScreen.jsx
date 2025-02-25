@@ -8,6 +8,17 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Simple hash function
+  const simpleHash = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString();
+  };
+
   const handleRegister = async () => {
     if (userName.length === 0 || password.length === 0 || confirmPassword.length === 0) {
       Alert.alert("Attention!", "Please enter all the fields.");
@@ -17,25 +28,32 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert("Error", "Passwords do not match");
       return;
     }
+  
     try {
-      const existingUser = await db.getFirstAsync(`SELECT * FROM users WHERE username = ?`, [userName]);
+      const existingUser = await db.getFirstAsync(
+        `SELECT * FROM users WHERE username = ?`, 
+        [userName]
+      );
       if (existingUser) {
         Alert.alert("Error", "Username already exists!");
         return;
       }
+  
+      // Hash the password
+      const hashedPassword = simpleHash(password);
+  
       // Insert user with placeholders for additional data
       const result = await db.runAsync(
         `INSERT INTO users (username, password, age, recurrence_period, creatinine_base_level) VALUES (?, ?, ?, ?, ?)`,
-        [userName, password, null, null, null]
+        [userName, hashedPassword, null, null, null]
       );
-      
-      Alert.alert("Success", "Registration Successful");
   
-      // Navigate to the first onboarding screen, passing user info
+      Alert.alert("Success", "Registration Successful");
       navigation.navigate("OnboardingAge", { userId: result.lastInsertRowId });
   
     } catch (error) {
       console.log("Error during registration:", error);
+      Alert.alert("Error", "Registration failed. Please try again.");
     }
   };
   

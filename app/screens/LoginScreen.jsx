@@ -15,31 +15,39 @@ const LoginScreen = ({ navigation }) => {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
 
+  // Simple hash function
+  const simpleHash = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString();
+  };
+
   const handleLogin = async () => {
     if (userName.length === 0 || password.length === 0) {
       Alert.alert("Attention!", "Please enter both username and password");
       return;
     }
     try {
-      const user = await db.getFirstAsync(`SELECT * FROM users WHERE username = ?`, [userName]);
-      if (!user) {
-        Alert.alert("Error", "Username does not exist!");
-        return;
-      }
-      const validUser = await db.getFirstAsync(
-        `SELECT * FROM users WHERE username = ? AND password = ?`, 
-        [userName, password]
+      const user = await db.getFirstAsync(
+        `SELECT * FROM users WHERE username = ? AND password = ?`,
+        [userName, simpleHash(password)]
       );
-      if (validUser) {
+
+      if (user) {
         Alert.alert("Success", "Login Successful");
-        navigation.navigate("Home", { user: userName });
+        navigation.navigate("Home", { userId: user.id });
         setUserName("");
         setPassword("");
       } else {
-        Alert.alert("Error", "Incorrect Password!");
+        Alert.alert("Error", "Invalid username or password!");
       }
     } catch (error) {
       console.log("Error during login:", error);
+      Alert.alert("Error", "Login failed. Please try again.");
     }
   };
 
