@@ -23,13 +23,22 @@ const RegisterScreen = ({ navigation }) => {
         Alert.alert("Error", "Username already exists!");
         return;
       }
-      await db.runAsync(`INSERT INTO users (username, password) VALUES (?, ?)`, [userName, password]);
+      // Insert user with placeholders for additional data
+      const result = await db.runAsync(
+        `INSERT INTO users (username, password, age, recurrence_period, creatinine_base_level) VALUES (?, ?, ?, ?, ?)`,
+        [userName, password, null, null, null]
+      );
+      
       Alert.alert("Success", "Registration Successful");
-      navigation.navigate("Home", { user: userName });
+  
+      // Navigate to the first onboarding screen, passing user info
+      navigation.navigate("OnboardingAge", { userId: result.lastInsertRowId });
+  
     } catch (error) {
       console.log("Error during registration:", error);
     }
   };
+  
 
   return (
     <View style={styles.container}>
