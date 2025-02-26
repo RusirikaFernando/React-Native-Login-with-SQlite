@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View, Alert, BackHandler } from "react-nat
 import { useSQLiteContext } from "expo-sqlite";
 
 const HomeScreen = ({ navigation, route }) => {
-
   useEffect(() => {
     const backAction = () => {
       return true; // Prevents going back
@@ -44,8 +43,9 @@ const HomeScreen = ({ navigation, route }) => {
     fetchUsername();
   }, []);
 
-  // Function to fetch all users (for debugging)
-  const fetchAllUsers = async () => {
+
+   // Function to fetch all users (for debugging)
+   const fetchAllUsers = async () => {
     try {
       const result = await db.getAllAsync("SELECT * FROM users");
       console.log("All Users:", result);
@@ -53,7 +53,6 @@ const HomeScreen = ({ navigation, route }) => {
       console.error("Error fetching users:", error);
     }
   };
-
   // Function to handle logout
   const handleLogout = async () => {
     try {
@@ -75,9 +74,19 @@ const HomeScreen = ({ navigation, route }) => {
           Welcome {username || 'User'}!
         </Text>
       )}
+
+      {/* Profile Button */}
+      <Pressable
+        style={styles.button}
+        onPress={() => navigation.navigate("Profile", { userId })}
+      >
+        <Text style={styles.buttonText}>Profile</Text>
+      </Pressable>
+
       <Pressable style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Logout</Text>
       </Pressable>
+
       <Pressable style={styles.button} onPress={fetchAllUsers}>
         <Text style={styles.buttonText}>Show Database in Console</Text>
       </Pressable>

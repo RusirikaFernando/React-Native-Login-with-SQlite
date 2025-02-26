@@ -11,6 +11,7 @@ import HomeScreen from "../screens/HomeScreen";
 import OnboardingAge from "../screens/OnboardingAge";
 import OnboardingRecurrence from "../screens/OnboardingRecurrence";
 import OnboardingCreatinine from "../screens/OnboardingCreatinine";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Stack = createStackNavigator();
 
@@ -68,6 +69,9 @@ export default function App() {
                 headerBackVisible: false, // Ensures no back button appears
               }}
             />
+            <Stack.Screen name="Profile" 
+            component={ProfileScreen}
+             />
           </Stack.Navigator>
         </NavigationContainer>
       </NavigationIndependentTree>
