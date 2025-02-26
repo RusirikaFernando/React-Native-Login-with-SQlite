@@ -1,8 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
+import { Pressable, StyleSheet, Text, View, Alert, BackHandler } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 const HomeScreen = ({ navigation, route }) => {
+
+  useEffect(() => {
+    const backAction = () => {
+      return true; // Prevents going back
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove(); // Cleanup on unmount
+  }, []);
+
   const db = useSQLiteContext();
   const { userId } = route.params; // Get userId from navigation params
   const [username, setUsername] = useState(""); // State to store username

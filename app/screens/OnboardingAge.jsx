@@ -1,7 +1,21 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, Button, StyleSheet, BackHandler } from "react-native";
 
 const OnboardingAge = ({ navigation, route }) => {
+
+  useEffect(() => {
+    const backAction = () => {
+      return true; // Prevents going back
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove(); // Cleanup on unmount
+  }, []);
+
   const { userId } = route.params;
   const [age, setAge] = useState("");
 
