@@ -74,7 +74,7 @@ const RegisterScreen = ({ navigation }) => {
         [userName, hashedPassword, null, null, null]
       );
 
-      Alert.alert("Success", "Registration Successful");
+      Alert.alert("Success", "Registration Successful few more steps to go !");
       navigation.navigate("OnboardingAge", { userId: result.lastInsertRowId });
     } catch (error) {
       console.log("Error during registration:", error);

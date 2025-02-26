@@ -39,6 +39,7 @@ export default function App() {
               name="OnboardingAge"
               component={OnboardingAge}
               options={{
+                title: "Age",
                 headerLeft: () => null,
                 headerBackVisible: false, // Ensures no back button appears
               }}
@@ -46,10 +47,18 @@ export default function App() {
             <Stack.Screen
               name="OnboardingRecurrence"
               component={OnboardingRecurrence}
+              options={{
+                title: "Recurrence Period", // Sets the title in the header
+               
+              }}
             />
             <Stack.Screen
               name="OnboardingCreatinine"
               component={OnboardingCreatinine}
+              options={{
+                title: "Creatinine Base Level", // Sets the title in the header
+               
+              }}
             />
             <Stack.Screen
               name="Home"

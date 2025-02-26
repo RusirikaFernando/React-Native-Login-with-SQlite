@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet ,TouchableOpacity,Image} from "react-native";
 
 const OnboardingRecurrence = ({ navigation, route }) => {
   const { userId, age } = route.params;
@@ -7,7 +7,7 @@ const OnboardingRecurrence = ({ navigation, route }) => {
 
   const handleNext = () => {
     if (!recurrence) {
-      alert("Please enter recurrence period");
+      alert("Please enter patient's recurrence period of creatinine checkups.");
       return;
     }
     navigation.navigate("OnboardingCreatinine", { userId, age, recurrence });
@@ -15,7 +15,12 @@ const OnboardingRecurrence = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Enter Recurrence Period</Text>
+       {/* App Icon */}
+       <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+
+{/* Welcome Message */}
+<Text style={styles.welcomeText}>Creatinine Care</Text>
+      <Text style={styles.title}>Enter Test Recurrence Period</Text>
       <TextInput
         style={styles.input}
         placeholder="Number of months"
@@ -23,19 +28,74 @@ const OnboardingRecurrence = ({ navigation, route }) => {
         value={recurrence}
         onChangeText={setRecurrence}
       />
-      <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={() => navigation.goBack()} />
-        <Button title="Next" onPress={handleNext} />
-      </View>
+{/* Next Button */}
+<TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+        <Text style={styles.buttonText}>Next</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.buttonText}>Back</Text>
+      </TouchableOpacity>
+      
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 22, marginBottom: 20 },
-  input: { borderWidth: 1, width: "80%", padding: 10, marginBottom: 20 },
-  buttonContainer: { flexDirection: "row", gap: 10 },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
+  },
+  input: {
+    width: "80%",
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginVertical: 5,
+    borderRadius: 5,
+  },
+  welcomeText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 60,
+  },
+  icon: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+    marginTop: -150,
+  },
+  nextButton: {
+    position: "absolute",
+    bottom: 40,
+    right: 20,
+    backgroundColor: "#800080",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+    width: "30%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  backButton: {
+    position: "absolute",
+    bottom: 40,
+    left: 20,
+    backgroundColor: "#990000",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 5,
+    width: "30%",
+    alignItems: "center",
+  },
 });
 
 export default OnboardingRecurrence;
