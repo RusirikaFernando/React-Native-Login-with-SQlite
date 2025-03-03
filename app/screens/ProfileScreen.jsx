@@ -64,7 +64,7 @@ const ProfileScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>User Profile</Text>
+      <Text style={styles.title}>Profile</Text>
       <Image
         source={require("../../assets/images/user.jpg")}
         style={styles.icon}
@@ -119,6 +119,7 @@ const styles = StyleSheet.create({
     fontSize: 24, 
     fontWeight: "bold", 
     marginBottom: 20, 
+    marginTop: 20,
     textAlign: "center" 
   },
   label: { 
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "90%",
     borderRadius: 5,
-    marginTop: 130,
+    marginTop: 110,
     alignSelf: "center",
   },
   icon: {

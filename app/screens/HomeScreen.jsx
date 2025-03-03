@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, Alert, BackHandler } from "react-native";
+import { StyleSheet, Text, View, BackHandler, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
-const HomeScreen = ({ navigation, route }) => {
+const HomeScreen = ({ route }) => {
+  const navigation = useNavigation();
+  const db = useSQLiteContext();
+  const { userId } = route.params;
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const backAction = () => {
       return true; // Prevents going back
@@ -13,13 +21,8 @@ const HomeScreen = ({ navigation, route }) => {
       backAction
     );
 
-    return () => backHandler.remove(); // Cleanup on unmount
+    return () => backHandler.remove();
   }, []);
-
-  const db = useSQLiteContext();
-  const { userId } = route.params; // Get userId from navigation params
-  const [username, setUsername] = useState(""); // State to store username
-  const [loading, setLoading] = useState(true);  // Add loading state
 
   // Function to fetch username from database
   const fetchUsername = async () => {
@@ -43,27 +46,6 @@ const HomeScreen = ({ navigation, route }) => {
     fetchUsername();
   }, []);
 
-
-   // Function to fetch all users (for debugging)
-   const fetchAllUsers = async () => {
-    try {
-      const result = await db.getAllAsync("SELECT * FROM users");
-      console.log("All Users:", result);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-  // Function to handle logout
-  const handleLogout = async () => {
-    try {
-      await db.runAsync(`DELETE FROM users WHERE id = ?`, [userId]); // Use userId instead of username
-      Alert.alert("Success", "Logout Successful");
-      navigation.navigate("Login");
-    } catch (error) {
-      console.log("Error during logout:", error);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
@@ -74,22 +56,6 @@ const HomeScreen = ({ navigation, route }) => {
           Welcome {username || 'User'}!
         </Text>
       )}
-
-      {/* Profile Button */}
-      <Pressable
-        style={styles.button}
-        onPress={() => navigation.navigate("Profile", { userId })}
-      >
-        <Text style={styles.buttonText}>Profile</Text>
-      </Pressable>
-
-      <Pressable style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </Pressable>
-
-      <Pressable style={styles.button} onPress={fetchAllUsers}>
-        <Text style={styles.buttonText}>Show Database in Console</Text>
-      </Pressable>
     </View>
   );
 };
@@ -109,19 +75,7 @@ const styles = StyleSheet.create({
   userText: {
     fontSize: 18,
     marginBottom: 30,
-  },
-  button: {
-    backgroundColor: "blue",
-    padding: 10,
-    marginVertical: 10,
-    width: "80%",
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontSize: 18,
-  },
+  }
 });
 
 export default HomeScreen;
