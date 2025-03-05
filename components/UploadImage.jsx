@@ -16,6 +16,7 @@ const UploadImage = ({ onImageUploaded }) => {
   const [extractedData, setExtractedData] = useState(null);
   const [error, setError] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const pickImage = () => {
     setModalVisible(true);
@@ -40,6 +41,33 @@ const UploadImage = ({ onImageUploaded }) => {
     }
   };
 
+  const processExtractedData = (rawData) => {
+    try {
+      // Validate and parse date
+      const dateParts = rawData.reportedDate.split('/');
+      if (dateParts.length !== 3) throw new Error("Invalid date format");
+      
+      const [day, month, year] = dateParts;
+      const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      
+      // Validate and parse creatinine value
+      const creatinineValue = parseFloat(rawData.serumCreatinine);
+      if (isNaN(creatinineValue)) throw new Error("Invalid creatinine value");
+      
+      // Format month name
+      const formattedMonth = rawData.month.charAt(0).toUpperCase() + rawData.month.slice(1).toLowerCase();
+
+      return {
+        rawDate: rawData.reportedDate,
+        reportedDate: isoDate,
+        month: formattedMonth,
+        serumCreatinine: creatinineValue
+      };
+    } catch (error) {
+      throw new Error(`Data processing failed: ${error.message}`);
+    }
+  };
+
   const uploadImage = async (uri) => {
     setUploading(true);
     setError("");
@@ -53,16 +81,34 @@ const UploadImage = ({ onImageUploaded }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Upload failed");
 
-      setExtractedData(data);
+  const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.message || "Upload failed");
+
+      const processedData = processExtractedData(responseData);
+      
+      setExtractedData(processedData);
       setImage(uri);
-      onImageUploaded(data);
+      setShowConfirmation(true);
+
     } catch (err) {
-      setError(err.message || "Failed to upload image");
+      setError(err.message || "Failed to process image");
+      setImage(null);
+      setExtractedData(null);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    try {
+      await onImageUploaded(extractedData);
+      setShowConfirmation(false);
+      setImage(null);
+      setExtractedData(null);
+      alert("Report saved successfully!");
+    } catch (error) {
+      setError("Failed to save report. Please try again.");
     }
   };
 
@@ -73,7 +119,7 @@ const UploadImage = ({ onImageUploaded }) => {
         <Text style={styles.buttonText}>Upload Report Image</Text>
       </TouchableOpacity>
 
-      {/* Custom Styled Modal */}
+      {/* Upload Requirements Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -83,30 +129,21 @@ const UploadImage = ({ onImageUploaded }) => {
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Upload Requirements</Text>
-            <Text style={styles.modalDescription}>
-              Please ensure:
-            </Text>
+            <Text style={styles.modalDescription}>Please ensure:</Text>
             <Text style={styles.modalText}>
               ✅ The uploaded file is a serum creatinine test report.{"\n"}
               ✅ The image has good lighting.{"\n"}
               ✅ The report contains the received date and creatinine value.
             </Text>
 
-            {/* Modal Buttons */}
             <View style={styles.buttonContainer}>
-              
-
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.okButton}
-                onPress={selectImage}
-              >
+              <TouchableOpacity style={styles.okButton} onPress={selectImage}>
                 <Text style={styles.okButtonText}>OK</Text>
               </TouchableOpacity>
             </View>
@@ -114,19 +151,47 @@ const UploadImage = ({ onImageUploaded }) => {
         </View>
       </Modal>
 
-      {/* Display Upload Progress and Image Preview */}
+      {/* Confirmation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showConfirmation}
+        onRequestClose={() => setShowConfirmation(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Confirm Report Data</Text>
+            <View style={styles.dataContainer}>
+              <Text>📅 Report Date: {extractedData?.rawDate}</Text>
+              <Text>📆 Month: {extractedData?.month}</Text>
+              <Text>💉 Creatinine Level: {extractedData?.serumCreatinine}</Text>
+            </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.cancelButton, { backgroundColor: 'red' }]}
+                onPress={() => {
+                  setShowConfirmation(false);
+                  setExtractedData(null);
+                  setImage(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Reupload</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.okButton, { backgroundColor: 'green' }]}
+                onPress={handleConfirm}
+              >
+                <Text style={styles.okButtonText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Upload Status */}
       {uploading && <ActivityIndicator size="large" color="#0000ff" />}
       {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-      {/* Display Extracted Data */}
-      {extractedData && (
-        <View style={styles.dataContainer}>
-          <Text>📅 Report Date: {extractedData.reportedDate}</Text>
-          <Text>📆 Month: {extractedData.month}</Text>
-          <Text>💉 Creatinine Level: {extractedData.serumCreatinine}</Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -196,7 +261,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    width: "30%"
+    width: "40%"
   },
 
   okButtonText: {
