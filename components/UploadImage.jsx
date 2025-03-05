@@ -112,7 +112,10 @@ const UploadImage = ({ onImageUploaded }) => {
       const responseData = await response.json();
       if (!response.ok) throw new Error(responseData.message || "Upload failed");
 
-      const processedData = processExtractedData(responseData);
+      const processedData = {
+        ...processExtractedData(responseData),
+        image_uri: uri 
+      };
       
       setExtractedData(processedData);
       setImage(uri);
@@ -129,7 +132,13 @@ const UploadImage = ({ onImageUploaded }) => {
 
   const handleConfirm = async () => {
     try {
-      const result = await onImageUploaded(extractedData);
+      // Make sure image_uri is included in the data
+      const dataToSave = {
+        ...extractedData,
+        image_uri: image  // Add the image URI here
+      };
+      
+      const result = await onImageUploaded(dataToSave);
       setShowConfirmation(false);
       setImage(null);
       setExtractedData(null);
