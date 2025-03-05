@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, BackHandler, FlatList } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  BackHandler,
+  TouchableOpacity,
+} from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import UploadImage from "../../components/UploadImage";
@@ -10,41 +16,48 @@ const HomeScreen = ({ route }) => {
   const { userId } = route.params;
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
-  const [reports, setReports] = useState([]);
 
-  const fetchReports = async () => {
+  const handleInsertReport = async (reportData) => {
     try {
-      const results = await db.getAllAsync(
-        `SELECT 
-          report_id,
-          strftime('%d/%m/%Y', reportedDate) as formattedDate,
-          month,
-          serumCreatinine 
-         FROM reports 
+      const existingReport = await db.getFirstAsync(
+        `SELECT report_id FROM reports 
          WHERE user_id = ? 
-         ORDER BY reportedDate DESC`,
-        [userId]
+           AND reportedDate = ? 
+           AND serumCreatinine = ?`,
+        [userId, reportData.reportedDate, reportData.serumCreatinine]
       );
-      setReports(results);
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-    }
-  };
 
+      if (existingReport) {
+        return {
+          success: false,
+          message: "⚠️ This report already exists!\nPlease upload a new report.",
+        };
+      }
 
-    const handleInsertReport = async (reportData) => {
-    try {
       await db.runAsync(
-        "INSERT INTO reports (user_id, reportedDate, month, serumCreatinine) VALUES (?, ?, ?, ?)",
-        [userId, reportData.reportedDate, reportData.month, reportData.serumCreatinine]
+        `INSERT INTO reports (user_id, reportedDate, month, serumCreatinine, image_uri) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          userId,
+          reportData.reportedDate,
+          reportData.month,
+          reportData.serumCreatinine,
+          reportData.image_uri
+        ]
       );
-      await fetchReports();
+
+      return {
+        success: true,
+        message: "✅ Report saved successfully!",
+      };
     } catch (error) {
-      console.error("Error saving report:", error);
-      alert("Failed to save report. Please try again.");
+      console.error("Database error:", error);
+      return {
+        success: false,
+        message: "❌ Failed to save report. Please try again.",
+      };
     }
   };
-
 
   useEffect(() => {
     const backAction = () => true;
@@ -71,7 +84,6 @@ const HomeScreen = ({ route }) => {
 
   useEffect(() => {
     fetchUsername();
-    fetchReports();
   }, []);
 
   return (
@@ -79,19 +91,12 @@ const HomeScreen = ({ route }) => {
       <Text style={styles.userText}>Welcome {username || "User"}!</Text>
       <UploadImage onImageUploaded={handleInsertReport} />
       
-      <Text style={styles.sectionTitle}>Previous Reports:</Text>
-      <FlatList
-        data={reports}
-        keyExtractor={(item) => item.report_id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.reportItem}>
-            <Text>Date: {item.formattedDate}</Text>
-            <Text>Month: {item.month}</Text>
-            <Text>Creatinine: {item.serumCreatinine}</Text>
-          </View>
-        )}
-        ListEmptyComponent={<Text>No reports available</Text>}
-      />
+      <TouchableOpacity
+        style={styles.historyButton}
+        onPress={() => navigation.navigate('ReportHistory', { userId })}
+      >
+        <Text style={styles.historyButtonText}>View Report History</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -101,24 +106,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     alignItems: "center",
-    justifyContent: "center",
+    paddingTop: 40,
   },
-  userText: { 
-    fontSize: 18, 
-    marginBottom: 20
-   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 10,
+  userText: {
+    fontSize: 24,
+    marginBottom: 30,
+    fontWeight: 'bold',
+    color: "#800080",
   },
-  reportItem: {
-    padding: 15,
-    backgroundColor: "#f8f8f8",
+  historyButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 8,
-    marginBottom: 10,
-    width: 300,
+    marginTop: 20,
+  },
+  historyButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
