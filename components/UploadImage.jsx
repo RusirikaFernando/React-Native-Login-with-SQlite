@@ -148,7 +148,7 @@ const UploadImage = ({ onImageUploaded }) => {
     <View style={styles.container}>
       {/* Upload Button */}
       <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-        <Text style={styles.buttonText}>Upload Report Image</Text>
+        <Text style={styles.buttonText}>Upload Report</Text>
       </TouchableOpacity>
 
       {/* Source Picker Modal */}
