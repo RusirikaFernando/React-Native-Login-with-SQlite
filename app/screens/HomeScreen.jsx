@@ -33,16 +33,43 @@ const HomeScreen = ({ route }) => {
 
 
     const handleInsertReport = async (reportData) => {
-    try {
-      await db.runAsync(
-        "INSERT INTO reports (user_id, reportedDate, month, serumCreatinine) VALUES (?, ?, ?, ?)",
-        [userId, reportData.reportedDate, reportData.month, reportData.serumCreatinine]
-      );
-      await fetchReports();
-    } catch (error) {
-      console.error("Error saving report:", error);
-      alert("Failed to save report. Please try again.");
-    }
+      try {
+        // Check for existing report with same date and creatinine value
+        const existingReport = await db.getFirstAsync(
+          `SELECT report_id FROM reports 
+           WHERE user_id = ? 
+             AND reportedDate = ? 
+             AND serumCreatinine = ?`,
+          [userId, reportData.reportedDate, reportData.serumCreatinine]
+        );
+    
+        if (existingReport) {
+          // Instead of throwing an error, return false with a message
+          return {
+            success: false,
+            message: "This report already exists in the system!"
+          };
+        }
+    
+        // If not exists, insert new report
+        await db.runAsync(
+          "INSERT INTO reports (user_id, reportedDate, month, serumCreatinine) VALUES (?, ?, ?, ?)",
+          [userId, reportData.reportedDate, reportData.month, reportData.serumCreatinine]
+        );
+        
+        await fetchReports();
+        return {
+          success: true,
+          message: "Report saved successfully!"
+        };
+        
+      } catch (error) {
+        console.error("Database error:", error);
+        return {
+          success: false,
+          message: "An error occurred while saving the report."
+        };
+      }
   };
 
 
