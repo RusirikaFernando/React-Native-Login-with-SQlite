@@ -4,7 +4,7 @@ import {
   DrawerItemList,
   DrawerItem,
 } from "@react-navigation/drawer";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { useEffect } from "react";
 import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
 import {
@@ -22,6 +22,7 @@ import OnboardingRecurrence from "../screens/OnboardingRecurrence";
 import OnboardingCreatinine from "../screens/OnboardingCreatinine";
 import ProfileScreen from "../screens/ProfileScreen";
 import ReportPreviewScreen from "../screens/ReportPreviewScreen";
+import ReportHistoryScreen from "../screens/ReportHistoryScreen";
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -32,16 +33,32 @@ function CustomDrawerContent(props) {
   const navigation = useNavigation();
 
   const handleLogout = async () => {
-    try {
-      const userId = props.state.routes[0].params?.userId;
-      await db.runAsync(`DELETE FROM users WHERE id = ?`, [userId]);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
-    } catch (error) {
-      console.log("Error during logout:", error);
-    }
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          onPress: async () => {
+            try {
+              const userId = props.state.routes[0].params?.userId;
+              await db.runAsync(`DELETE FROM users WHERE id = ?`, [userId]);
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+            } catch (error) {
+              console.log("Error during logout:", error);
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
   };
 
   return (
@@ -252,6 +269,14 @@ export default function App() {
               component={ReportPreviewScreen}
               options={{
                 title: "Report Details",
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="ReportHistory"
+              component={ReportHistoryScreen}
+              options={{
+                title: "Report History",
                 headerShown: true,
               }}
             />
