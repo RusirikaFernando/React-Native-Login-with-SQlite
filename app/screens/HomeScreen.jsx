@@ -7,11 +7,13 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  Modal
+  Modal,
+  Image 
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import UploadImage from "../../components/UploadImage";
+import * as FileSystem from 'expo-file-system';
 
 const HomeScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -30,7 +32,8 @@ const HomeScreen = ({ route }) => {
           report_id,
           strftime('%d/%m/%Y', reportedDate) as formattedDate,
           month,
-          serumCreatinine 
+          serumCreatinine,
+          image_uri
          FROM reports 
          WHERE user_id = ? 
          ORDER BY reportedDate DESC`,
@@ -60,13 +63,16 @@ const HomeScreen = ({ route }) => {
         };
       }
 
+      // Insert report with image_uri
       await db.runAsync(
-        "INSERT INTO reports (user_id, reportedDate, month, serumCreatinine) VALUES (?, ?, ?, ?)",
+        `INSERT INTO reports (user_id, reportedDate, month, serumCreatinine, image_uri) 
+         VALUES (?, ?, ?, ?, ?)`,
         [
           userId,
           reportData.reportedDate,
           reportData.month,
           reportData.serumCreatinine,
+          reportData.image_uri // Make sure this is passed from UploadImage
         ]
       );
 
@@ -112,20 +118,29 @@ const HomeScreen = ({ route }) => {
     fetchReports();
   }, []);
 
-  const handleDeleteReport = async (reportId) => {
+  const handleDeleteReport = async (reportId, imageUri) => {
     try {
+      // Delete from database
       await db.runAsync(
         "DELETE FROM reports WHERE report_id = ?",
         [reportId]
       );
+      
+      // Only try to delete the image file if imageUri exists
+      if (imageUri) {
+        try {
+          await FileSystem.deleteAsync(imageUri, { idempotent: true });
+        } catch (fileError) {
+          console.log("Image file deletion failed:", fileError);
+          // Continue execution even if image deletion fails
+        }
+      }
+      
       await fetchReports();
       Alert.alert("Success", "Report deleted successfully!");
     } catch (error) {
       console.error("Error deleting report:", error);
       Alert.alert("Error", "Failed to delete report. Please try again.");
-    } finally {
-      setDeleteModalVisible(false);
-      setSelectedReport(null);
     }
   };
 
@@ -135,19 +150,35 @@ const HomeScreen = ({ route }) => {
   };
 
   const renderReportItem = ({ item }) => (
-    <View style={styles.reportItem}>
+    <TouchableOpacity 
+      style={styles.reportItem}
+      onPress={() => navigation.navigate('ReportPreview', { report: item })}
+    >
       <View style={styles.reportContent}>
         <Text>Date: {item.formattedDate}</Text>
         <Text>Month: {item.month}</Text>
         <Text>Creatinine: {item.serumCreatinine}</Text>
       </View>
-      <TouchableOpacity 
-        style={styles.deleteButton}
-        onPress={() => confirmDelete(item)}
-      >
-        <Text style={styles.deleteButtonText}>✕</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.imageContainer}>
+        {item.image_uri ? (
+          <Image 
+            source={{ uri: item.image_uri }} 
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.thumbnail, styles.placeholderImage]}>
+            <Text style={styles.placeholderText}>No Image</Text>
+          </View>
+        )}
+        <TouchableOpacity 
+          style={styles.deleteButton}
+          onPress={() => confirmDelete(item)}
+        >
+          <Text style={styles.deleteButtonText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -191,7 +222,10 @@ const HomeScreen = ({ route }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmDeleteButton]}
-                onPress={() => handleDeleteReport(selectedReport?.report_id)}
+                onPress={() => {
+                  setDeleteModalVisible(false);
+                  handleDeleteReport(selectedReport?.report_id, selectedReport?.image_uri);
+                }}
               >
                 <Text style={styles.buttonText}>Delete</Text>
               </TouchableOpacity>
@@ -235,16 +269,36 @@ const styles = StyleSheet.create({
   },
   reportContent: {
     flex: 1,
+    marginRight: 10,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    width: 60,  // Fixed width for the image container
+  },
+  thumbnail: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginBottom: 5,
+    backgroundColor: '#f0f0f0',  // Light background for loading state
+  },
+  placeholderImage: {
+    backgroundColor: '#e1e1e1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 10,
+    color: '#666',
   },
   deleteButton: {
-    padding: 8,
-    marginLeft: 10,
+    padding: 4,
+    marginTop: 2,
   },
   deleteButtonText: {
     color: 'red',
     fontSize: 12,
     fontWeight: 'bold',
-    marginBottom:50,
   },
   modalContainer: {
     flex: 1,
