@@ -172,14 +172,14 @@ const UploadImage = ({ onImageUploaded }) => {
             <Text style={styles.modalTitle}>Select Image Source</Text>
             
             <TouchableOpacity 
-              style={styles.sourceButton}
+              style={styles.sourceButton1}
               onPress={() => handleSourceSelection('camera')}
             >
               <Text style={styles.buttonText}>Take Photo</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.sourceButton}
+              style={styles.sourceButton2}
               onPress={() => handleSourceSelection('gallery')}
             >
               <Text style={styles.buttonText}>Choose from Gallery</Text>
@@ -369,14 +369,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "80%",
   },
-  sourceButton: {
-    backgroundColor: "#007AFF",
+  sourceButton1: {
+    backgroundColor: "#D38B57",
     padding: 15,
     borderRadius: 10,
     marginVertical: 10,
     width: '100%',
     alignItems: 'center'
   },
+  sourceButton2: {
+    backgroundColor: "#D16315",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+    width: '100%',
+    alignItems: 'center'
+  },
+ 
 });
 
 export default UploadImage;
