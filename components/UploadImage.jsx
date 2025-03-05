@@ -81,8 +81,7 @@ const UploadImage = ({ onImageUploaded }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-
-  const responseData = await response.json();
+      const responseData = await response.json();
       if (!response.ok) throw new Error(responseData.message || "Upload failed");
 
       const processedData = processExtractedData(responseData);
@@ -102,12 +101,17 @@ const UploadImage = ({ onImageUploaded }) => {
 
   const handleConfirm = async () => {
     try {
-      await onImageUploaded(extractedData);
+      const result = await onImageUploaded(extractedData);
       setShowConfirmation(false);
       setImage(null);
       setExtractedData(null);
-      alert("Report saved successfully!");
+      
+      alert(result.message);
+      
     } catch (error) {
+      setShowConfirmation(false);
+      setImage(null);
+      setExtractedData(null);
       setError("Failed to save report. Please try again.");
     }
   };
