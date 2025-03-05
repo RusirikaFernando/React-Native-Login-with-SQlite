@@ -11,22 +11,49 @@ import {
 import * as ImagePicker from "expo-image-picker";
 
 const UploadImage = ({ onImageUploaded }) => {
-  const [uploading, setUploading] = useState(false);
-  const [image, setImage] = useState(null);
-  const [extractedData, setExtractedData] = useState(null);
-  const [error, setError] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [image, setImage] = useState(null);
+    const [extractedData, setExtractedData] = useState(null);
+    const [error, setError] = useState("");
+    const [modalVisible, setModalVisible] = useState(false);
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [showSourcePicker, setShowSourcePicker] = useState(false);
+    const [selectedSource, setSelectedSource] = useState(null);
+  
+    const pickImage = () => {
+      setShowSourcePicker(true);
+    };
 
-  const pickImage = () => {
+  const handleSourceSelection = (source) => {
+    setSelectedSource(source);
+    setShowSourcePicker(false);
     setModalVisible(true);
   };
 
-  const selectImage = async () => {
+  const captureImage = async () => {
+    setModalVisible(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      alert("Camera permissions are required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets) {
+      uploadImage(result.assets[0].uri);
+    }
+  };
+
+  const selectFromGallery = async () => {
     setModalVisible(false);
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      alert("Camera roll permissions are required!");
+      alert("Gallery permissions are required!");
       return;
     }
 
@@ -41,6 +68,7 @@ const UploadImage = ({ onImageUploaded }) => {
     }
   };
 
+
   const processExtractedData = (rawData) => {
     try {
       // Validate and parse date
@@ -52,7 +80,7 @@ const UploadImage = ({ onImageUploaded }) => {
       
       // Validate and parse creatinine value
       const creatinineValue = parseFloat(rawData.serumCreatinine);
-      if (isNaN(creatinineValue)) throw new Error("Invalid creatinine value");
+      if (isNaN(creatinineValue)) throw new Error("Unable to capture the creatinine value correctly. Please try again.");
       
       // Format month name
       const formattedMonth = rawData.month.charAt(0).toUpperCase() + rawData.month.slice(1).toLowerCase();
@@ -123,6 +151,41 @@ const UploadImage = ({ onImageUploaded }) => {
         <Text style={styles.buttonText}>Upload Report Image</Text>
       </TouchableOpacity>
 
+      {/* Source Picker Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showSourcePicker}
+        onRequestClose={() => setShowSourcePicker(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Select Image Source</Text>
+            
+            <TouchableOpacity 
+              style={styles.sourceButton}
+              onPress={() => handleSourceSelection('camera')}
+            >
+              <Text style={styles.buttonText}>Take Photo</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.sourceButton}
+              onPress={() => handleSourceSelection('gallery')}
+            >
+              <Text style={styles.buttonText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowSourcePicker(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Upload Requirements Modal */}
       <Modal
         animationType="fade"
@@ -137,7 +200,7 @@ const UploadImage = ({ onImageUploaded }) => {
             <Text style={styles.modalText}>
               ✅ The uploaded file is a serum creatinine test report.{"\n"}
               ✅ The image has good lighting.{"\n"}
-              ✅ The report contains the received date and creatinine value.
+              ✅ Make sure your image contains the received date and creatinine value.
             </Text>
 
             <View style={styles.buttonContainer}>
@@ -147,8 +210,11 @@ const UploadImage = ({ onImageUploaded }) => {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.okButton} onPress={selectImage}>
-                <Text style={styles.okButtonText}>OK</Text>
+              <TouchableOpacity 
+                style={styles.okButton} 
+                onPress={selectedSource === 'camera' ? captureImage : selectFromGallery}
+              >
+                <Text style={styles.okButtonText}>Continue</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -293,6 +359,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     borderRadius: 10,
     width: "80%",
+  },
+  sourceButton: {
+    backgroundColor: "#007AFF",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+    width: '100%',
+    alignItems: 'center'
   },
 });
 
