@@ -36,7 +36,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow access to your photos to upload reports"
+          "photosPermission": "Allow access to your photos to upload reports",
+          "cameraPermission": "Allow access to your camera to capture reports"
         }
       ],
       "expo-sqlite"
