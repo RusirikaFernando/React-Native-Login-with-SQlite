@@ -28,7 +28,7 @@ const ReportHistoryScreen = () => {
       const results = await db.getAllAsync(
         `SELECT 
           report_id,
-          strftime('%d/%m/%Y', reportedDate) as formattedDate,
+          strftime('%Y-%m-%d', reportedDate) as formattedDate,
           month,
           serumCreatinine,
           image_uri

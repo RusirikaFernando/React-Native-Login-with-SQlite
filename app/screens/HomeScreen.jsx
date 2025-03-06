@@ -46,6 +46,13 @@ const HomeScreen = ({ route }) => {
         ]
       );
 
+      // Force refresh when navigating to chart
+    navigation.navigate('Chart', { 
+      userId,
+      refresh: Date.now() // Add timestamp to force refresh
+    });
+
+
       return {
         success: true,
         message: "✅ Report saved successfully!",
@@ -97,6 +104,13 @@ const HomeScreen = ({ route }) => {
       >
         <Text style={styles.historyButtonText}>View Report History</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+      style={[styles.historyButton, { backgroundColor: '#800080' }]}
+      onPress={() => navigation.navigate('Chart', { userId })}
+    >
+      <Text style={styles.historyButtonText}>View Creatinine Trend</Text>
+    </TouchableOpacity>
     </View>
   );
 };
