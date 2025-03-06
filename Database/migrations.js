@@ -55,5 +55,20 @@ export const migrations = [
           ON reports(reportedDate)
         `);
       },
+    },
+    {
+      version: 4,
+      up: async (db) => {
+        const tableInfo = await db.getAllAsync(`PRAGMA table_info(users)`);
+        const hasNotificationId = tableInfo.some(col => col.name === 'notification_id');
+        
+        if (!hasNotificationId) {
+          await db.execAsync(`
+            ALTER TABLE users 
+            ADD COLUMN notification_id TEXT
+          `);
+        }
+      },
     }
+    
   ];
