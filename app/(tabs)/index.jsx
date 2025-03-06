@@ -13,7 +13,7 @@ import {
   useNavigation,
 } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { initializeDatabase } from "../../database";
+import { initializeDatabase } from "../../Database/database";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
