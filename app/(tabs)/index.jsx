@@ -23,6 +23,7 @@ import OnboardingCreatinine from "../screens/OnboardingCreatinine";
 import ProfileScreen from "../screens/ProfileScreen";
 import ReportPreviewScreen from "../screens/ReportPreviewScreen";
 import ReportHistoryScreen from "../screens/ReportHistoryScreen";
+import ChartScreen from '../screens/ChartScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -277,6 +278,14 @@ export default function App() {
               component={ReportHistoryScreen}
               options={{
                 title: "Report History",
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="Chart"
+              component={ChartScreen}
+              options={{
+                title: "Creatinine Trend",
                 headerShown: true,
               }}
             />
