@@ -5,9 +5,12 @@ import {
   View,
   BackHandler,
   TouchableOpacity,
+  Alert,
+  Button,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
+import * as Notifications from "expo-notifications"; // Import Notifications
 import UploadImage from "../../components/UploadImage";
 
 const HomeScreen = ({ route }) => {
@@ -17,6 +20,38 @@ const HomeScreen = ({ route }) => {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Request notification permissions on mount
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== "granted") {
+        await Notifications.requestPermissionsAsync();
+      }
+    };
+    requestPermissions();
+  }, []);
+
+  // Test notification function
+  const testNotification = async () => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "TEST",
+          body: "This is a test notification!",
+        },
+        trigger: { seconds: 5 },
+      });
+      Alert.alert(
+        "Test Notification",
+        "A test notification will appear in 5 seconds."
+      );
+    } catch (error) {
+      console.error("Error scheduling test notification:", error);
+      Alert.alert("Error", "Failed to schedule test notification.");
+    }
+  };
+
+  // Handle report insertion
   const handleInsertReport = async (reportData) => {
     try {
       const existingReport = await db.getFirstAsync(
@@ -30,7 +65,8 @@ const HomeScreen = ({ route }) => {
       if (existingReport) {
         return {
           success: false,
-          message: "⚠️ This report already exists!\nPlease upload a new report.",
+          message:
+            "⚠️ This report already exists!\nPlease upload a new report.",
         };
       }
 
@@ -42,16 +78,15 @@ const HomeScreen = ({ route }) => {
           reportData.reportedDate,
           reportData.month,
           reportData.serumCreatinine,
-          reportData.image_uri
+          reportData.image_uri,
         ]
       );
 
       // Force refresh when navigating to chart
-    navigation.navigate('Chart', { 
-      userId,
-      refresh: Date.now() // Add timestamp to force refresh
-    });
-
+      navigation.navigate("Chart", {
+        userId,
+        refresh: Date.now(), // Add timestamp to force refresh
+      });
 
       return {
         success: true,
@@ -66,6 +101,7 @@ const HomeScreen = ({ route }) => {
     }
   };
 
+  // Prevent back button on Android
   useEffect(() => {
     const backAction = () => true;
     const backHandler = BackHandler.addEventListener(
@@ -75,6 +111,7 @@ const HomeScreen = ({ route }) => {
     return () => backHandler.remove();
   }, []);
 
+  // Fetch username
   const fetchUsername = async () => {
     try {
       const result = await db.getFirstAsync(
@@ -97,20 +134,35 @@ const HomeScreen = ({ route }) => {
     <View style={styles.container}>
       <Text style={styles.userText}>Welcome {username || "User"}!</Text>
       <UploadImage onImageUploaded={handleInsertReport} />
-      
+
       <TouchableOpacity
         style={styles.historyButton}
-        onPress={() => navigation.navigate('ReportHistory', { userId })}
+        onPress={() => navigation.navigate("ReportHistory", { userId })}
       >
         <Text style={styles.historyButtonText}>View Report History</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-      style={[styles.historyButton, { backgroundColor: '#800080' }]}
-      onPress={() => navigation.navigate('Chart', { userId })}
-    >
-      <Text style={styles.historyButtonText}>View Creatinine Trend</Text>
-    </TouchableOpacity>
+        style={[styles.historyButton, { backgroundColor: "#800080" }]}
+        onPress={() => navigation.navigate("Chart", { userId })}
+      >
+        <Text style={styles.historyButtonText}>View Creatinine Trend</Text>
+      </TouchableOpacity>
+
+      {/* Notification Testing Buttons */}
+      <Button
+        
+        title="Check Permissions"
+        onPress={async () => {
+          const settings = await Notifications.getPermissionsAsync();
+          Alert.alert("Permissions", JSON.stringify(settings));
+        }}
+      />
+      <Button
+        
+        title="Test Notification"
+        onPress={testNotification}
+      />
     </View>
   );
 };
@@ -125,7 +177,7 @@ const styles = StyleSheet.create({
   userText: {
     fontSize: 24,
     marginBottom: 30,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: "#800080",
   },
   historyButton: {
@@ -140,6 +192,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+
 });
 
 export default HomeScreen;
