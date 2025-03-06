@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { scheduleRecurringNotification, cancelNotification } from "../../Services/notifications"; // Import notification functions
+import * as Notifications from "expo-notifications"; // Import Notifications
 
 const ProfileScreen = ({ route }) => {
   const db = useSQLiteContext();
@@ -17,6 +19,7 @@ const ProfileScreen = ({ route }) => {
   const [age, setAge] = useState("");
   const [recurrencePeriod, setRecurrencePeriod] = useState("");
   const [creatinineBaseLevel, setCreatinineBaseLevel] = useState("");
+  const [notificationId, setNotificationId] = useState(null); // Add notification ID state
 
   useEffect(() => {
     fetchUserData();
@@ -34,6 +37,7 @@ const ProfileScreen = ({ route }) => {
         setAge(user.age ? String(user.age) : "");
         setRecurrencePeriod(user.recurrence_period ? String(user.recurrence_period) : "");
         setCreatinineBaseLevel(user.creatinine_base_level ? String(user.creatinine_base_level) : "");
+        setNotificationId(user.notification_id || null); // Set notification ID
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -49,16 +53,67 @@ const ProfileScreen = ({ route }) => {
     }
 
     try {
+      // Cancel existing notification if recurrence period changes
+      if (notificationId) {
+        await cancelNotification(notificationId);
+      }
+
+      // Schedule new notification
+      const newNotificationId = await scheduleRecurringNotification(
+        parseInt(recurrencePeriod),
+        userId
+      );
+
+      // Update database
       await db.runAsync(
         `UPDATE users 
-         SET username = ?, age = ?, recurrence_period = ?, creatinine_base_level = ? 
+         SET username = ?, 
+             age = ?, 
+             recurrence_period = ?, 
+             creatinine_base_level = ?,
+             notification_id = ?
          WHERE id = ?`,
-        [username, age, recurrencePeriod, creatinineBaseLevel, userId]
+        [username, age, recurrencePeriod, creatinineBaseLevel, newNotificationId, userId]
       );
+
+      // Update local state
+      setNotificationId(newNotificationId);
+
       Alert.alert("Success", "Profile updated successfully.");
     } catch (error) {
       console.error("Error updating profile:", error);
       Alert.alert("Error", "Failed to update profile");
+    }
+  };
+
+  // Handle recurrence period change separately
+  const handleUpdateRecurrence = async (newPeriod) => {
+    try {
+      // Cancel existing notification
+      if (notificationId) {
+        await cancelNotification(notificationId);
+      }
+
+      // Schedule new notification
+      const newNotificationId = await scheduleRecurringNotification(
+        parseInt(newPeriod),
+        userId
+      );
+
+      // Update database
+      await db.runAsync(
+        'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
+        [newPeriod, newNotificationId, userId]
+      );
+
+      // Update local state
+      setRecurrencePeriod(newPeriod);
+      setNotificationId(newNotificationId);
+
+      Alert.alert('Success', 'Reminder schedule updated successfully');
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+      Alert.alert('Error', 'Failed to update reminder schedule');
     }
   };
 
@@ -89,7 +144,10 @@ const ProfileScreen = ({ route }) => {
       <TextInput
         style={styles.input}
         value={recurrencePeriod}
-        onChangeText={setRecurrencePeriod}
+        onChangeText={(text) => {
+          setRecurrencePeriod(text);
+          handleUpdateRecurrence(text); // Update notification when recurrence changes
+        }}
         keyboardType="numeric"
       />
 
@@ -101,10 +159,26 @@ const ProfileScreen = ({ route }) => {
         keyboardType="numeric"
       />
 
-<TouchableOpacity style={styles.updateButton} onPress={handleUpdateProfile}>
+      <TouchableOpacity style={styles.updateButton} onPress={handleUpdateProfile}>
         <Text style={styles.buttonText}>Update Profile</Text>
       </TouchableOpacity>
 
+      {/* Add test notification button */}
+      <TouchableOpacity 
+        style={[styles.updateButton, { backgroundColor: 'green', marginTop: 20 }]}
+        onPress={async () => {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'TEST',
+              body: 'This is a test notification!',
+            },
+            trigger: { seconds: 5 },
+          });
+          Alert.alert('Test Notification', 'A test notification will appear in 5 seconds');
+        }}
+      >
+        <Text style={styles.buttonText}>Test Notification</Text>
+      </TouchableOpacity>
     </View>
   );
 };
