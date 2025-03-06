@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
+  Button,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { scheduleRecurringNotification, cancelNotification } from "../../Services/notifications"; // Import notification functions
@@ -42,6 +43,24 @@ const ProfileScreen = ({ route }) => {
     } catch (error) {
       console.error("Error fetching user data:", error);
       Alert.alert("Error", "Failed to load user data");
+    }
+  };
+
+
+  //Notification cancelation. 
+  const handleCancelNotification = async () => {
+    if (!notificationId) {
+      Alert.alert("Error", "No notification to cancel.");
+      return;
+    }
+
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notificationId);
+      Alert.alert("Success", "Notification canceled successfully.");
+      setNotificationId(null); // Clear the notification ID in state
+    } catch (error) {
+      console.error("Error canceling notification:", error);
+      Alert.alert("Error", "Failed to cancel notification.");
     }
   };
 
@@ -117,6 +136,8 @@ const ProfileScreen = ({ route }) => {
     }
   };
 
+
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Profile</Text>
@@ -159,9 +180,18 @@ const ProfileScreen = ({ route }) => {
         keyboardType="numeric"
       />
 
+ {/* Add a button to cancel notifications */}
+
+
+<TouchableOpacity style={styles.cancelButton} onPress={handleCancelNotification} disabled={!notificationId} >
+        <Text style={styles.buttonText}>Cancel Notification</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.updateButton} onPress={handleUpdateProfile}>
         <Text style={styles.buttonText}>Update Profile</Text>
       </TouchableOpacity>
+
+
 
       {/* Add test notification button */}
       <TouchableOpacity 
@@ -220,7 +250,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "90%",
     borderRadius: 5,
-    marginTop: 110,
+    marginTop: 5,
     alignSelf: "center",
   },
   icon: {
@@ -230,6 +260,16 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 50,
   },
+cancelButton:{
+  backgroundColor: "#0693e3",
+    padding: 10,
+    marginVertical: 10,
+    width: "90%",
+    borderRadius: 5,
+    marginTop: 10,
+    alignSelf: "center",
+},
+
 });
 
 export default ProfileScreen;
