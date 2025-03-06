@@ -46,4 +46,14 @@ export const migrations = [
         }
       },
     },
+    {
+      version: 3,
+      up: async (db) => {
+        // Add index for faster date sorting
+        await db.execAsync(`
+          CREATE INDEX IF NOT EXISTS idx_reports_date 
+          ON reports(reportedDate)
+        `);
+      },
+    }
   ];
