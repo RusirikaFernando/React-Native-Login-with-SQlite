@@ -24,6 +24,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import ReportPreviewScreen from "../screens/ReportPreviewScreen";
 import ReportHistoryScreen from "../screens/ReportHistoryScreen";
 import ChartScreen from '../screens/ChartScreen';
+import * as Notifications from 'expo-notifications';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -216,6 +217,17 @@ function DebugScreen() {
 }
 
 export default function App() {
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        await Notifications.requestPermissionsAsync();
+      }
+    };
+    requestPermissions();
+  }, []);
+
   return (
     <SQLiteProvider databaseName="auth.db" onInit={initializeDatabase}>
       <NavigationIndependentTree>
@@ -301,4 +313,6 @@ export default function App() {
       </NavigationIndependentTree>
     </SQLiteProvider>
   );
+
+  
 }

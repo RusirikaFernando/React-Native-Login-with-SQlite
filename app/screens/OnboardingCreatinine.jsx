@@ -1,21 +1,53 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert ,TouchableOpacity,Image } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import * as Notifications from "expo-notifications"; // Import Notifications
 
 const OnboardingCreatinine = ({ navigation, route }) => {
   const db = useSQLiteContext();
-  const { userId, age, recurrence } = route.params;
-  const [creatinine, setCreatinine] = useState("");
+  const { userId, age, recurrence, notificationId } = route.params; // Destructure params
+  const [creatinine, setCreatinine] = useState(""); // Define creatinine state
 
   const handleFinish = async () => {
+    if (!creatinine) {
+      Alert.alert("Error", "Please enter the creatinine base level.");
+      return;
+    }
+
     try {
+      // Schedule the notification
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "🩺 Checkup Reminder",
+          body: "Time for your next creatinine test!",
+        },
+        trigger: {
+          date: new Date(Date.now() + recurrence * 30 * 24 * 60 * 60 * 1000), // Convert months to milliseconds
+          repeats: true,
+        },
+      });
+
+      // Update the database
       await db.runAsync(
-        `UPDATE users SET age = ?, recurrence_period = ?, creatinine_base_level = ? WHERE id = ?`,
-        [age, recurrence, creatinine || null, userId]
+        `UPDATE users 
+         SET age = ?, 
+             recurrence_period = ?, 
+             creatinine_base_level = ?,
+             notification_id = ?
+         WHERE id = ?`,
+        [age, recurrence, creatinine, notificationId, userId]
       );
 
       Alert.alert("Success", "Profile setup complete!");
-      navigation.navigate("Home", {userId});
+      navigation.navigate("Home", { userId });
     } catch (error) {
       console.log("Database update error:", error);
       Alert.alert("Error", "Something went wrong!");
@@ -24,35 +56,44 @@ const OnboardingCreatinine = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-       {/* App Icon */}
-       <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+      {/* App Icon */}
+      <Image
+        source={require("../../assets/images/app-icon.jpg")}
+        style={styles.icon}
+      />
 
-{/* Welcome Message */}
-<Text style={styles.welcomeText}>Creatinine Care</Text>
+      {/* Welcome Message */}
+      <Text style={styles.welcomeText}>Creatinine Care</Text>
       <Text style={styles.title}>Enter Creatinine Base Level</Text>
       <TextInput
         style={styles.input}
         placeholder="Base Creatinine Level"
         keyboardType="numeric"
         value={creatinine}
-        onChangeText={setCreatinine}
+        onChangeText={setCreatinine} // Update creatinine state
       />
-     
+
       <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
         <Text style={styles.buttonText}>Finish</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <Text style={styles.buttonText}>Back</Text>
       </TouchableOpacity>
-      
-
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",

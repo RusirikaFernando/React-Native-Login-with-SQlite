@@ -40,6 +40,13 @@
           "cameraPermission": "Allow access to your camera to capture reports"
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ],
       "expo-sqlite"
     ],
     "experiments": {

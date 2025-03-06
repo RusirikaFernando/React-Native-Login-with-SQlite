@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, StyleSheet ,TouchableOpacity,Image} from "react-native";
+import { scheduleRecurringNotification } from "../../Services/notifications";
 
 const OnboardingRecurrence = ({ navigation, route }) => {
   const { userId, age } = route.params;
@@ -7,10 +8,16 @@ const OnboardingRecurrence = ({ navigation, route }) => {
 
   const handleNext = () => {
     if (!recurrence) {
-      alert("Please enter patient's recurrence period of creatinine checkups.");
+      alert("Please enter recurrence period");
       return;
     }
-    navigation.navigate("OnboardingCreatinine", { userId, age, recurrence });
+  
+    // Pass recurrence period to the next screen
+    navigation.navigate("OnboardingCreatinine", {
+      userId,
+      age,
+      recurrence: parseInt(recurrence), // Convert to number
+    });
   };
 
   return (
