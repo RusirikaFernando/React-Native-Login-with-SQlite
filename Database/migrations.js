@@ -69,6 +69,15 @@ export const migrations = [
           `);
         }
       },
+    },
+    {
+      version: 5,
+      up: async (db) => {
+        await db.execAsync(`
+          CREATE INDEX IF NOT EXISTS idx_user_creatinine 
+          ON reports(user_id, serumCreatinine)
+        `);
+      },
     }
     
   ];

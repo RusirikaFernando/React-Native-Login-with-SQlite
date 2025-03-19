@@ -36,8 +36,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow access to your photos to upload reports",
-          "cameraPermission": "Allow access to your camera to capture reports"
+          "photosPermission": "The app needs access to your photos to upload reports.",
+          "cameraPermission": "The app needs access to your camera to take photos of reports."
         }
       ],
       [

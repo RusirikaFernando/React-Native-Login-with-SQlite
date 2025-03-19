@@ -148,7 +148,14 @@ export default function App() {
   }, []);
 
   return (
-    <SQLiteProvider databaseName="auth.db" onInit={initializeDatabase}>
+    <SQLiteProvider 
+      databaseName="auth.db" 
+      onInit={initializeDatabase}
+      options={{
+        enableDangerousRawSql: true,
+        enableMultiDbAccess: true,
+      }}
+    >
       <NavigationIndependentTree>
         <NavigationContainer>
           <Stack.Navigator
