@@ -27,7 +27,7 @@ const OnboardingCreatinine = ({ navigation, route }) => {
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: "🩺 Checkup Reminder",
-          body: "Time for your next creatinine test!",
+          body: "Time for your creatinine test!",
         },
         trigger: {
           date: new Date(Date.now() + recurrence * 30 * 24 * 60 * 60 * 1000), // Convert months to milliseconds

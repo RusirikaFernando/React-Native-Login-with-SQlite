@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { scheduleRecurringNotification, cancelNotification } from "../../Services/notifications"; // Import notification functions
+import { scheduleRecurringNotification2, cancelNotification } from "../../Services/notifications"; // Import notification functions
 import * as Notifications from "expo-notifications"; // Import Notifications
 
 const ProfileScreen = ({ route }) => {
@@ -79,7 +79,7 @@ const ProfileScreen = ({ route }) => {
       }
 
       // Schedule new notification
-      const newNotificationId = await scheduleRecurringNotification(
+      const newNotificationId = await scheduleRecurringNotification2(
         parseInt(recurrencePeriod),
         userId
       );
@@ -107,37 +107,43 @@ const ProfileScreen = ({ route }) => {
     }
   };
 
-  // Handle recurrence period change separately
-  const handleUpdateRecurrence = async (newPeriod) => {
-    try {
-      // Cancel existing notification
-      if (notificationId) {
-        await cancelNotification(notificationId);
-      }
+// Handle recurrence period change separately
+const handleUpdateRecurrence = async (newPeriod) => {
+  const period = parseInt(newPeriod);
+  
+  // Validate input
+  if (isNaN(period) || period < 1) {
+    Alert.alert("Error", "Recurrence period must be at least 1 month.");
+    return;
+  }
 
-      // Schedule new notification
-      const newNotificationId = await scheduleRecurringNotification(
-        parseInt(newPeriod),
-        userId
-      );
-
-      // Update database
-      await db.runAsync(
-        'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
-        [newPeriod, newNotificationId, userId]
-      );
-
-      // Update local state
-      setRecurrencePeriod(newPeriod);
-      setNotificationId(newNotificationId);
-      setIsCancelButtonDisabled(false); // Enable the button if a new notification is scheduled
-
-      Alert.alert('Success', 'Reminder schedule updated successfully');
-    } catch (error) {
-      console.error('Error updating reminder:', error);
-      Alert.alert('Error', 'Failed to update reminder schedule');
+  try {
+    // Cancel existing notification
+    if (notificationId) {
+      await cancelNotification(notificationId);
     }
-  };
+
+    // Schedule new notification
+    const newNotificationId = await scheduleRecurringNotification2(period, userId);
+
+    // Update database
+    await db.runAsync(
+      'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
+      [period, newNotificationId, userId]
+    );
+
+    // Update local state
+    setRecurrencePeriod(period.toString());
+    setNotificationId(newNotificationId);
+    setIsCancelButtonDisabled(false);
+
+    Alert.alert('Success', 'Reminder schedule updated successfully');
+  } catch (error) {
+    console.error('Error updating reminder:', error);
+    Alert.alert('Error', error.message || 'Failed to update reminder schedule');
+  }
+};
+
 
   return (
     <View style={styles.container}>
@@ -164,14 +170,17 @@ const ProfileScreen = ({ route }) => {
 
       <Text style={styles.label}>Recurrence Period (months):</Text>
       <TextInput
-        style={styles.input}
-        value={recurrencePeriod}
-        onChangeText={(text) => {
-          setRecurrencePeriod(text);
-          handleUpdateRecurrence(text); // Update notification when recurrence changes
-        }}
-        keyboardType="numeric"
-      />
+  style={styles.input}
+  value={recurrencePeriod}
+  onChangeText={(text) => {
+    // Allow only numbers greater than 0
+    if (/^\d*$/.test(text) && (text === "" || parseInt(text) > 0)) {
+      setRecurrencePeriod(text);
+      if (text) handleUpdateRecurrence(text);
+    }
+  }}
+  keyboardType="numeric"
+/>
 
       <Text style={styles.label}>Creatinine Base Level:</Text>
       <TextInput
