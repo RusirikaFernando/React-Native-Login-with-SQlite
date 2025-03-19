@@ -6,11 +6,9 @@ import {
   BackHandler,
   TouchableOpacity,
   Alert,
-  Button,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import * as Notifications from "expo-notifications"; // Import Notifications
 import UploadImage from "../../components/UploadImage";
 
 const HomeScreen = ({ route }) => {
@@ -20,36 +18,6 @@ const HomeScreen = ({ route }) => {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Request notification permissions on mount
-  useEffect(() => {
-    const requestPermissions = async () => {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== "granted") {
-        await Notifications.requestPermissionsAsync();
-      }
-    };
-    requestPermissions();
-  }, []);
-
-  // Test notification function
-  const testNotification = async () => {
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "TEST",
-          body: "This is a test notification!",
-        },
-        trigger: { seconds: 5 },
-      });
-      Alert.alert(
-        "Test Notification",
-        "A test notification will appear in 5 seconds."
-      );
-    } catch (error) {
-      console.error("Error scheduling test notification:", error);
-      Alert.alert("Error", "Failed to schedule test notification.");
-    }
-  };
 
   // Handle report insertion
   const handleInsertReport = async (reportData) => {
@@ -149,20 +117,7 @@ const HomeScreen = ({ route }) => {
         <Text style={styles.historyButtonText}>View Creatinine Trend</Text>
       </TouchableOpacity>
 
-      {/* Notification Testing Buttons */}
-      <Button
-        
-        title="Check Permissions"
-        onPress={async () => {
-          const settings = await Notifications.getPermissionsAsync();
-          Alert.alert("Permissions", JSON.stringify(settings));
-        }}
-      />
-      <Button
-        
-        title="Test Notification"
-        onPress={testNotification}
-      />
+     
     </View>
   );
 };
@@ -192,7 +147,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-
+ 
 });
 
 export default HomeScreen;

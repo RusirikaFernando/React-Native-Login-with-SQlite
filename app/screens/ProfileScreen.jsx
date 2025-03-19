@@ -7,10 +7,9 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
-  Button,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { scheduleRecurringNotification, cancelNotification } from "../../Services/notifications"; // Import notification functions
+import { scheduleRecurringNotification2, cancelNotification } from "../../Services/notifications"; // Import notification functions
 import * as Notifications from "expo-notifications"; // Import Notifications
 
 const ProfileScreen = ({ route }) => {
@@ -21,6 +20,7 @@ const ProfileScreen = ({ route }) => {
   const [recurrencePeriod, setRecurrencePeriod] = useState("");
   const [creatinineBaseLevel, setCreatinineBaseLevel] = useState("");
   const [notificationId, setNotificationId] = useState(null); // Add notification ID state
+  const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState(false); // State for button disable
 
   useEffect(() => {
     fetchUserData();
@@ -39,6 +39,7 @@ const ProfileScreen = ({ route }) => {
         setRecurrencePeriod(user.recurrence_period ? String(user.recurrence_period) : "");
         setCreatinineBaseLevel(user.creatinine_base_level ? String(user.creatinine_base_level) : "");
         setNotificationId(user.notification_id || null); // Set notification ID
+        setIsCancelButtonDisabled(!user.notification_id); // Disable button if no notification
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -46,8 +47,7 @@ const ProfileScreen = ({ route }) => {
     }
   };
 
-
-  //Notification cancelation. 
+  // Notification cancellation
   const handleCancelNotification = async () => {
     if (!notificationId) {
       Alert.alert("Error", "No notification to cancel.");
@@ -58,6 +58,7 @@ const ProfileScreen = ({ route }) => {
       await Notifications.cancelScheduledNotificationAsync(notificationId);
       Alert.alert("Success", "Notification canceled successfully.");
       setNotificationId(null); // Clear the notification ID in state
+      setIsCancelButtonDisabled(true); // Disable the button after cancellation
     } catch (error) {
       console.error("Error canceling notification:", error);
       Alert.alert("Error", "Failed to cancel notification.");
@@ -78,7 +79,7 @@ const ProfileScreen = ({ route }) => {
       }
 
       // Schedule new notification
-      const newNotificationId = await scheduleRecurringNotification(
+      const newNotificationId = await scheduleRecurringNotification2(
         parseInt(recurrencePeriod),
         userId
       );
@@ -97,6 +98,7 @@ const ProfileScreen = ({ route }) => {
 
       // Update local state
       setNotificationId(newNotificationId);
+      setIsCancelButtonDisabled(false); // Enable the button if a new notification is scheduled
 
       Alert.alert("Success", "Profile updated successfully.");
     } catch (error) {
@@ -105,37 +107,42 @@ const ProfileScreen = ({ route }) => {
     }
   };
 
-  // Handle recurrence period change separately
-  const handleUpdateRecurrence = async (newPeriod) => {
-    try {
-      // Cancel existing notification
-      if (notificationId) {
-        await cancelNotification(notificationId);
-      }
+// Handle recurrence period change separately
+const handleUpdateRecurrence = async (newPeriod) => {
+  const period = parseInt(newPeriod);
+  
+  // Validate input
+  if (isNaN(period) || period < 1) {
+    Alert.alert("Error", "Recurrence period must be at least 1 month.");
+    return;
+  }
 
-      // Schedule new notification
-      const newNotificationId = await scheduleRecurringNotification(
-        parseInt(newPeriod),
-        userId
-      );
-
-      // Update database
-      await db.runAsync(
-        'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
-        [newPeriod, newNotificationId, userId]
-      );
-
-      // Update local state
-      setRecurrencePeriod(newPeriod);
-      setNotificationId(newNotificationId);
-
-      Alert.alert('Success', 'Reminder schedule updated successfully');
-    } catch (error) {
-      console.error('Error updating reminder:', error);
-      Alert.alert('Error', 'Failed to update reminder schedule');
+  try {
+    // Cancel existing notification
+    if (notificationId) {
+      await cancelNotification(notificationId);
     }
-  };
 
+    // Schedule new notification
+    const newNotificationId = await scheduleRecurringNotification2(period, userId);
+
+    // Update database
+    await db.runAsync(
+      'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
+      [period, newNotificationId, userId]
+    );
+
+    // Update local state
+    setRecurrencePeriod(period.toString());
+    setNotificationId(newNotificationId);
+    setIsCancelButtonDisabled(false);
+
+    Alert.alert('Success', 'Reminder schedule updated successfully');
+  } catch (error) {
+    console.error('Error updating reminder:', error);
+    Alert.alert('Error', error.message || 'Failed to update reminder schedule');
+  }
+};
 
 
   return (
@@ -163,14 +170,17 @@ const ProfileScreen = ({ route }) => {
 
       <Text style={styles.label}>Recurrence Period (months):</Text>
       <TextInput
-        style={styles.input}
-        value={recurrencePeriod}
-        onChangeText={(text) => {
-          setRecurrencePeriod(text);
-          handleUpdateRecurrence(text); // Update notification when recurrence changes
-        }}
-        keyboardType="numeric"
-      />
+  style={styles.input}
+  value={recurrencePeriod}
+  onChangeText={(text) => {
+    // Allow only numbers greater than 0
+    if (/^\d*$/.test(text) && (text === "" || parseInt(text) > 0)) {
+      setRecurrencePeriod(text);
+      if (text) handleUpdateRecurrence(text);
+    }
+  }}
+  keyboardType="numeric"
+/>
 
       <Text style={styles.label}>Creatinine Base Level:</Text>
       <TextInput
@@ -180,34 +190,21 @@ const ProfileScreen = ({ route }) => {
         keyboardType="numeric"
       />
 
- {/* Add a button to cancel notifications */}
-
-
-<TouchableOpacity style={styles.cancelButton} onPress={handleCancelNotification} disabled={!notificationId} >
+      {/* Cancel Notification Button */}
+      <TouchableOpacity
+        style={[
+          styles.cancelButton,
+          isCancelButtonDisabled && styles.disabledButton, // Apply disabled style
+        ]}
+        onPress={handleCancelNotification}
+        disabled={isCancelButtonDisabled} // Disable button if no notification
+      >
         <Text style={styles.buttonText}>Cancel Notification</Text>
       </TouchableOpacity>
 
+      {/* Update Profile Button */}
       <TouchableOpacity style={styles.updateButton} onPress={handleUpdateProfile}>
         <Text style={styles.buttonText}>Update Profile</Text>
-      </TouchableOpacity>
-
-
-
-      {/* Add test notification button */}
-      <TouchableOpacity 
-        style={[styles.updateButton, { backgroundColor: 'green', marginTop: 20 }]}
-        onPress={async () => {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: 'TEST',
-              body: 'This is a test notification!',
-            },
-            trigger: { seconds: 5 },
-          });
-          Alert.alert('Test Notification', 'A test notification will appear in 5 seconds');
-        }}
-      >
-        <Text style={styles.buttonText}>Test Notification</Text>
       </TouchableOpacity>
     </View>
   );
@@ -245,7 +242,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   updateButton: {
-    backgroundColor: "blue",
+    backgroundColor: "#0693e3",
     padding: 10,
     marginVertical: 10,
     width: "90%",
@@ -260,16 +257,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 50,
   },
-cancelButton:{
-  backgroundColor: "#0693e3",
+  cancelButton: {
+    backgroundColor: "#4CAF50",
     padding: 10,
     marginVertical: 10,
     width: "90%",
     borderRadius: 5,
     marginTop: 10,
     alignSelf: "center",
-},
-
+  },
+  disabledButton: {
+    backgroundColor: "#ccc", // Gray color for disabled state
+    opacity: 0.6, // Reduce opacity for disabled state
+  },
 });
 
 export default ProfileScreen;
