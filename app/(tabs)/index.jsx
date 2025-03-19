@@ -220,6 +220,7 @@ export default function App() {
                 headerShown: true,
               }}
             />
+           
             <Stack.Screen
               name="Home"
               component={HomeStack}
