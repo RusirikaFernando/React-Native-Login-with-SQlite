@@ -1,4 +1,5 @@
-import * as Notifications from 'expo-notifications';
+import * as Notifications from "expo-notifications";
+
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -16,8 +17,8 @@ export const scheduleRecurringNotification = async (months, userId) => {
 
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
-      title: '🩺 Checkup Reminder',
-      body: 'Time for your next creatinine test!',
+      title: "🩺 Checkup Reminder",
+      body: "Time for your next creatinine test!",
       data: { userId },
     },
     trigger: {
