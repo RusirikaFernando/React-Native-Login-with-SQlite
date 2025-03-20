@@ -14,13 +14,14 @@ import * as Notifications from "expo-notifications"; // Import Notifications
 
 const ProfileScreen = ({ route }) => {
   const db = useSQLiteContext();
-  const { userId } = route.params;
+  const { userId, newBaseLevel } = route.params; // Destructure newBaseLevel from route.params
   const [username, setUsername] = useState("");
   const [age, setAge] = useState("");
   const [recurrencePeriod, setRecurrencePeriod] = useState("");
   const [creatinineBaseLevel, setCreatinineBaseLevel] = useState("");
   const [notificationId, setNotificationId] = useState(null); // Add notification ID state
   const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState(false); // State for button disable
+  
 
   useEffect(() => {
     fetchUserData();
@@ -38,14 +39,21 @@ const ProfileScreen = ({ route }) => {
         setAge(user.age ? String(user.age) : "");
         setRecurrencePeriod(user.recurrence_period ? String(user.recurrence_period) : "");
         setCreatinineBaseLevel(user.creatinine_base_level ? String(user.creatinine_base_level) : "");
-        setNotificationId(user.notification_id || null); // Set notification ID
-        setIsCancelButtonDisabled(!user.notification_id); // Disable button if no notification
+        setNotificationId(user.notification_id || null);
+        setIsCancelButtonDisabled(!user.notification_id);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
       Alert.alert("Error", "Failed to load user data");
     }
   };
+
+  // Listen for changes to newBaseLevel
+  useEffect(() => {
+    if (newBaseLevel) {
+      setCreatinineBaseLevel(newBaseLevel.toFixed(2)); // Update the base level in the UI
+    }
+  }, [newBaseLevel]);
 
   // Notification cancellation
   const handleCancelNotification = async () => {
@@ -65,41 +73,39 @@ const ProfileScreen = ({ route }) => {
     }
   };
 
-  // Handle profile update
   const handleUpdateProfile = async () => {
-    if (!username || !age || !recurrencePeriod || !creatinineBaseLevel) {
-      Alert.alert("Error", "All fields are required.");
+    if (!username || !age || !recurrencePeriod) {
+      Alert.alert("Error", "Username, age, and recurrence period are required.");
       return;
     }
-
+  
     try {
       // Cancel existing notification if recurrence period changes
       if (notificationId) {
         await cancelNotification(notificationId);
       }
-
+  
       // Schedule new notification
       const newNotificationId = await scheduleRecurringNotification2(
         parseInt(recurrencePeriod),
         userId
       );
-
-      // Update database
+  
+      // Update database (excluding creatinine_base_level)
       await db.runAsync(
         `UPDATE users 
          SET username = ?, 
              age = ?, 
              recurrence_period = ?, 
-             creatinine_base_level = ?,
              notification_id = ?
          WHERE id = ?`,
-        [username, age, recurrencePeriod, creatinineBaseLevel, newNotificationId, userId]
+        [username, age, recurrencePeriod, newNotificationId, userId]
       );
-
+  
       // Update local state
       setNotificationId(newNotificationId);
-      setIsCancelButtonDisabled(false); // Enable the button if a new notification is scheduled
-
+      setIsCancelButtonDisabled(false);
+  
       Alert.alert("Success", "Profile updated successfully.");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -188,6 +194,7 @@ const handleUpdateRecurrence = async (newPeriod) => {
         value={creatinineBaseLevel}
         onChangeText={setCreatinineBaseLevel}
         keyboardType="numeric"
+        editable={false} // Disable editing
       />
 
       {/* Cancel Notification Button */}

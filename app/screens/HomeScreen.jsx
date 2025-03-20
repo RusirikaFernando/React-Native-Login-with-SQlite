@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,8 @@ import {
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import UploadImage from "../../components/UploadImage";
+import { calculateAndUpdateBaseLevel } from "../../Database/dbHelpers";
+
 
 const HomeScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -50,16 +52,22 @@ const HomeScreen = ({ route }) => {
         ]
       );
 
-      // Force refresh when navigating to chart
-      navigation.navigate("Chart", {
-        userId,
-        refresh: Date.now(), // Add timestamp to force refresh
-      });
+      // Calculate and update base level
+    const newBaseLevel = await calculateAndUpdateBaseLevel(db, userId);
 
-      return {
-        success: true,
-        message: "✅ Report saved successfully!",
-      };
+     // Pass the new base level to the ProfileScreen
+     navigation.setParams({ newBaseLevel });
+
+      // Navigate to chart
+    navigation.navigate("Chart", { userId, refresh: Date.now() });
+
+    return {
+      success: true,
+      message: "✅ Report saved successfully!",
+      baseLevel: newBaseLevel,
+      currentValue: reportData.serumCreatinine
+    };
+    
     } catch (error) {
       console.error("Database error:", error);
       return {
@@ -79,24 +87,31 @@ const HomeScreen = ({ route }) => {
     return () => backHandler.remove();
   }, []);
 
-  // Fetch username
+  // Fetch username with better error handling
   const fetchUsername = async () => {
     try {
       const result = await db.getFirstAsync(
         "SELECT username FROM users WHERE id = ?",
         [userId]
       );
-      if (result) setUsername(result.username);
+      if (result) {
+        setUsername(result.username);
+      }
     } catch (error) {
       console.error("Error fetching username:", error);
+      // Set a default username if fetch fails
+      setUsername("User");
     } finally {
       setLoading(false);
     }
   };
 
+  // Use useCallback to memoize the function
+  const memoizedFetchUsername = useCallback(fetchUsername, [db, userId]);
+
   useEffect(() => {
-    fetchUsername();
-  }, []);
+    memoizedFetchUsername();
+  }, [memoizedFetchUsername]);
 
   return (
     <View style={styles.container}>

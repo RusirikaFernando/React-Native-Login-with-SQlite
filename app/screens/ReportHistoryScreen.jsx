@@ -12,6 +12,7 @@ import {
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as FileSystem from 'expo-file-system';
+import { calculateAndUpdateBaseLevel } from "../../Database/dbHelpers";
 
 const ReportHistoryScreen = () => {
   const navigation = useNavigation();
@@ -61,9 +62,10 @@ const ReportHistoryScreen = () => {
       
       await fetchReports();
       Alert.alert("Success", "Report deleted successfully!");
+      await calculateAndUpdateBaseLevel(db, userId);
     } catch (error) {
       console.error("Delete error:", error);
-      Alert.alert("Error", "Failed to delete report");
+      Alert.alert("Error", "Failed to delete report. Please check your internet connection or try again later.");
     }
   };
 

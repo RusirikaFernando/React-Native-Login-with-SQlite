@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Modal,
+  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
@@ -24,50 +25,73 @@ const UploadImage = ({ onImageUploaded }) => {
       setShowSourcePicker(true);
     };
 
-  const handleSourceSelection = (source) => {
-    setSelectedSource(source);
-    setShowSourcePicker(false);
-    setModalVisible(true);
-  };
+    const handleSourceSelection = (source) => {
+      setSelectedSource(source);
+      setShowSourcePicker(false);
+      setModalVisible(true);
+    };
 
   const captureImage = async () => {
-    setModalVisible(false);
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      alert("Camera permissions are required!");
-      return;
-    }
+    try {
+      setShowSourcePicker(false);
+      setModalVisible(false);
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Camera permission is required to take photos');
+        return;
+      }
 
-    if (!result.canceled && result.assets) {
-      uploadImage(result.assets[0].uri);
+      // Launch camera
+      let result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        
+        quality: 1,
+      });
+
+      console.log('Camera result:', result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        uploadImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera');
     }
   };
 
   const selectFromGallery = async () => {
-    setModalVisible(false);
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      alert("Gallery permissions are required!");
-      return;
-    }
+    try {
+      setShowSourcePicker(false);
+      setModalVisible(false);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+      // Request gallery permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Gallery permission is required to select photos');
+        return;
+      }
 
-    if (!result.canceled && result.assets) {
-      uploadImage(result.assets[0].uri);
+      // Launch gallery
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        
+        quality: 1,
+      });
+
+      console.log('Gallery result:', result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        uploadImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Gallery error:', error);
+      Alert.alert('Error', 'Failed to open gallery');
     }
   };
-
 
   const processExtractedData = (rawData) => {
     try {
@@ -142,6 +166,19 @@ const UploadImage = ({ onImageUploaded }) => {
       setShowConfirmation(false);
       setImage(null);
       setExtractedData(null);
+
+      // Show comparison alert if successful
+    if (result.success) {
+      Alert.alert(
+        "🟢 Health Status Update 🟢\n\n",
+        `Current Level: ${result.currentValue} mg/dL\n` +
+        `Base Level: ${result.baseLevel.toFixed(2)} mg/dL\n\n` +
+        `${result.currentValue < result.baseLevel ? 
+          "🎉 Great! Your levels are better than average!\n\n 📌 Keep it up... " : 
+          "⚠️ Alert! Levels are above average. \n\n💧Stay Hydrated. try to drink more water."}`,
+        [{ text: "OK" }]
+      );
+    }
       
       alert(result.message);
       
