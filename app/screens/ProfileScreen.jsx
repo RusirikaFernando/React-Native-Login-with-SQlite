@@ -9,23 +9,25 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { scheduleRecurringNotification2, cancelNotification } from "../../Services/notifications"; // Import notification functions
-import * as Notifications from "expo-notifications"; // Import Notifications
+import { scheduleRecurringNotification2, cancelNotification } from "../../Services/notifications";
+import * as Notifications from "expo-notifications";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ProfileScreen = ({ route }) => {
   const db = useSQLiteContext();
-  const { userId, newBaseLevel } = route.params; // Destructure newBaseLevel from route.params
+  const { userId, newBaseLevel } = route.params;
   const [username, setUsername] = useState("");
   const [age, setAge] = useState("");
   const [recurrencePeriod, setRecurrencePeriod] = useState("");
   const [creatinineBaseLevel, setCreatinineBaseLevel] = useState("");
-  const [notificationId, setNotificationId] = useState(null); // Add notification ID state
-  const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState(false); // State for button disable
-  
+  const [notificationId, setNotificationId] = useState(null);
+  const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState(false);
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUserData();
+    }, [newBaseLevel]) // Refresh when newBaseLevel changes
+  );
 
   // Fetch user data from SQLite
   const fetchUserData = async () => {
@@ -78,19 +80,19 @@ const ProfileScreen = ({ route }) => {
       Alert.alert("Error", "Username, age, and recurrence period are required.");
       return;
     }
-  
+
     try {
       // Cancel existing notification if recurrence period changes
       if (notificationId) {
         await cancelNotification(notificationId);
       }
-  
+
       // Schedule new notification
       const newNotificationId = await scheduleRecurringNotification2(
         parseInt(recurrencePeriod),
         userId
       );
-  
+
       // Update database (excluding creatinine_base_level)
       await db.runAsync(
         `UPDATE users 
@@ -101,11 +103,11 @@ const ProfileScreen = ({ route }) => {
          WHERE id = ?`,
         [username, age, recurrencePeriod, newNotificationId, userId]
       );
-  
+
       // Update local state
       setNotificationId(newNotificationId);
       setIsCancelButtonDisabled(false);
-  
+
       Alert.alert("Success", "Profile updated successfully.");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -113,43 +115,41 @@ const ProfileScreen = ({ route }) => {
     }
   };
 
-// Handle recurrence period change separately
-const handleUpdateRecurrence = async (newPeriod) => {
-  const period = parseInt(newPeriod);
-  
-  // Validate input
-  if (isNaN(period) || period < 1) {
-    Alert.alert("Error", "Recurrence period must be at least 1 month.");
-    return;
-  }
+  // Handle recurrence period change
+  const handleUpdateRecurrence = async (newPeriod) => {
+    const period = parseInt(newPeriod);
 
-  try {
-    // Cancel existing notification
-    if (notificationId) {
-      await cancelNotification(notificationId);
+    if (isNaN(period) || period < 1) {
+      Alert.alert("Error", "Recurrence period must be at least 1 month.");
+      return;
     }
 
-    // Schedule new notification
-    const newNotificationId = await scheduleRecurringNotification2(period, userId);
+    try {
+      // Cancel existing notification
+      if (notificationId) {
+        await cancelNotification(notificationId);
+      }
 
-    // Update database
-    await db.runAsync(
-      'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
-      [period, newNotificationId, userId]
-    );
+      // Schedule new notification
+      const newNotificationId = await scheduleRecurringNotification2(period, userId);
 
-    // Update local state
-    setRecurrencePeriod(period.toString());
-    setNotificationId(newNotificationId);
-    setIsCancelButtonDisabled(false);
+      // Update database
+      await db.runAsync(
+        'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
+        [period, newNotificationId, userId]
+      );
 
-    Alert.alert('Success', 'Reminder schedule updated successfully');
-  } catch (error) {
-    console.error('Error updating reminder:', error);
-    Alert.alert('Error', error.message || 'Failed to update reminder schedule');
-  }
-};
+      // Update local state
+      setRecurrencePeriod(period.toString());
+      setNotificationId(newNotificationId);
+      setIsCancelButtonDisabled(false);
 
+      Alert.alert('Success', 'Reminder schedule updated successfully');
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+      Alert.alert('Error', error.message || 'Failed to update reminder schedule');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -176,17 +176,16 @@ const handleUpdateRecurrence = async (newPeriod) => {
 
       <Text style={styles.label}>Recurrence Period (months):</Text>
       <TextInput
-  style={styles.input}
-  value={recurrencePeriod}
-  onChangeText={(text) => {
-    // Allow only numbers greater than 0
-    if (/^\d*$/.test(text) && (text === "" || parseInt(text) > 0)) {
-      setRecurrencePeriod(text);
-      if (text) handleUpdateRecurrence(text);
-    }
-  }}
-  keyboardType="numeric"
-/>
+        style={styles.input}
+        value={recurrencePeriod}
+        onChangeText={(text) => {
+          if (/^\d*$/.test(text) && (text === "" || parseInt(text) > 0)) {
+            setRecurrencePeriod(text);
+            if (text) handleUpdateRecurrence(text);
+          }
+        }}
+        keyboardType="numeric"
+      />
 
       <Text style={styles.label}>Creatinine Base Level:</Text>
       <TextInput
@@ -201,10 +200,10 @@ const handleUpdateRecurrence = async (newPeriod) => {
       <TouchableOpacity
         style={[
           styles.cancelButton,
-          isCancelButtonDisabled && styles.disabledButton, // Apply disabled style
+          isCancelButtonDisabled && styles.disabledButton,
         ]}
         onPress={handleCancelNotification}
-        disabled={isCancelButtonDisabled} // Disable button if no notification
+        disabled={isCancelButtonDisabled}
       >
         <Text style={styles.buttonText}>Cancel Notification</Text>
       </TouchableOpacity>
@@ -274,8 +273,8 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   disabledButton: {
-    backgroundColor: "#ccc", // Gray color for disabled state
-    opacity: 0.6, // Reduce opacity for disabled state
+    backgroundColor: "#ccc",
+    opacity: 0.6,
   },
 });
 
