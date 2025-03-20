@@ -55,6 +55,9 @@ const HomeScreen = ({ route }) => {
       // Calculate and update base level
     const newBaseLevel = await calculateAndUpdateBaseLevel(db, userId);
 
+     // Pass the new base level to the ProfileScreen
+     navigation.setParams({ newBaseLevel });
+
       // Navigate to chart
     navigation.navigate("Chart", { userId, refresh: Date.now() });
 
