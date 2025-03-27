@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
 
   cancelButton: {
-    backgroundColor: "red",
+    backgroundColor: "#FF4D4D",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     width: "80%",
   },
   sourceButton1: {
-    backgroundColor: "#D38B57",
+    backgroundColor: "#6A5ACD",
     padding: 15,
     borderRadius: 10,
     marginVertical: 10,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   sourceButton2: {
-    backgroundColor: "#D16315",
+    backgroundColor: "#4682B4",
     padding: 15,
     borderRadius: 10,
     marginVertical: 10,
