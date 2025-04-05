@@ -13,7 +13,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import UploadImage from "../../components/UploadImage";
 import { calculateAndUpdateBaseLevel } from "../../Database/dbHelpers";
 
-
 const HomeScreen = ({ route }) => {
   const navigation = useNavigation();
   const db = useSQLiteContext();
@@ -103,7 +102,10 @@ const HomeScreen = ({ route }) => {
   return (
     <LinearGradient colors={["#f9f9f9", "#e0e0ff"]} style={styles.container}>
       <Text style={styles.userText}>Welcome, {username}!</Text>
-      <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+      <Image
+        source={require("../../assets/images/app-icon.jpg")}
+        style={styles.icon}
+      />
       <UploadImage onImageUploaded={handleInsertReport} />
 
       <TouchableOpacity
@@ -119,8 +121,12 @@ const HomeScreen = ({ route }) => {
       >
         <Text style={styles.historyButtonText}>View Creatinine Trend</Text>
       </TouchableOpacity>
-
-
+      <TouchableOpacity
+        style={[styles.historyButton, { backgroundColor: "#32CD32" }]}
+        onPress={() => navigation.navigate("EGFR")}
+      >
+        <Text style={styles.historyButtonText}>🧮 Check eGFR</Text>
+      </TouchableOpacity>
     </LinearGradient>
   );
 };
@@ -155,7 +161,6 @@ const styles = StyleSheet.create({
     height: 120,
     marginBottom: 20,
   },
-  
 });
 
 export default HomeScreen;

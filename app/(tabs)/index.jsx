@@ -23,10 +23,11 @@ import OnboardingCreatinine from "../screens/OnboardingCreatinine";
 import ProfileScreen from "../screens/ProfileScreen";
 import ReportPreviewScreen from "../screens/ReportPreviewScreen";
 import ReportHistoryScreen from "../screens/ReportHistoryScreen";
-import ChartScreen from '../screens/ChartScreen';
+import ChartScreen from "../screens/ChartScreen";
 import NotificationTestScreen from "../screens/Test/NotificationTestScreen";
 import DebugScreen from "../screens/Test/DB-debug";
-import * as Notifications from 'expo-notifications';
+import EGFRScreen from "../screens/eGFR";
+import * as Notifications from "expo-notifications";
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -134,13 +135,11 @@ function HomeStack({ route }) {
   );
 }
 
-
 export default function App() {
-
   useEffect(() => {
     const requestPermissions = async () => {
       const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
+      if (status !== "granted") {
         await Notifications.requestPermissionsAsync();
       }
     };
@@ -148,8 +147,8 @@ export default function App() {
   }, []);
 
   return (
-    <SQLiteProvider 
-      databaseName="auth.db" 
+    <SQLiteProvider
+      databaseName="auth.db"
       onInit={initializeDatabase}
       options={{
         enableDangerousRawSql: true,
@@ -227,7 +226,15 @@ export default function App() {
                 headerShown: true,
               }}
             />
-           
+            <Stack.Screen
+              name="EGFR"
+              component={EGFRScreen}
+              options={{
+                title: "eGFR Calculator",
+                headerShown: true,
+              }}
+            />
+
             <Stack.Screen
               name="Home"
               component={HomeStack}
@@ -240,6 +247,4 @@ export default function App() {
       </NavigationIndependentTree>
     </SQLiteProvider>
   );
-
-  
 }
