@@ -20,7 +20,7 @@ const EduContent = () => {
       </Card>
       <View style={styles.container2}>
       {/* App Icon */}
-      <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+      <Image source={require("../../assets/images/app-icon.png")} style={styles.icon} />
       </View>
       {/* Understanding Kidney Health Section */}
       <Card style={styles.sectionCard}>
@@ -168,14 +168,15 @@ const styles = StyleSheet.create({
   },
   titleCard: {
     marginBottom: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "#daebf7",
     elevation: 2, // Adds a subtle shadow
     marginTop:10,
+    
   },
   sectionCard: {
     marginBottom: 10,
     marginTop: 15,
-    backgroundColor: "#dfc3e1",
+    backgroundColor: "#daebf7",
     elevation: 2, // Adds a subtle shadow
   },
   title: {

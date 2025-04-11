@@ -3,10 +3,10 @@ import {
   View,
   Text,
   TextInput,
-  Image,
   StyleSheet,
-  Alert,
   TouchableOpacity,
+  Modal,
+  ScrollView
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { scheduleRecurringNotification2, cancelNotification } from "../../Services/notifications";
@@ -22,14 +22,25 @@ const ProfileScreen = ({ route }) => {
   const [creatinineBaseLevel, setCreatinineBaseLevel] = useState("");
   const [notificationId, setNotificationId] = useState(null);
   const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({ 
+    title: "", 
+    message: "", 
+    color: "#3498db" 
+  });
+
+  // Show modal alert
+  const showAlert = (title, message, color = "#3498db") => {
+    setModalContent({ title, message, color });
+    setModalVisible(true);
+  };
 
   useFocusEffect(
     React.useCallback(() => {
       fetchUserData();
-    }, [newBaseLevel]) // Refresh when newBaseLevel changes
+    }, [newBaseLevel])
   );
 
-  // Fetch user data from SQLite
   const fetchUserData = async () => {
     try {
       const user = await db.getFirstAsync(
@@ -46,54 +57,49 @@ const ProfileScreen = ({ route }) => {
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-      Alert.alert("Error", "Failed to load user data");
+      showAlert("Error", "Failed to load user data", "#e74c3c");
     }
   };
 
-  // Listen for changes to newBaseLevel
   useEffect(() => {
     if (newBaseLevel) {
-      setCreatinineBaseLevel(newBaseLevel.toFixed(2)); // Update the base level in the UI
+      setCreatinineBaseLevel(newBaseLevel.toFixed(2));
     }
   }, [newBaseLevel]);
 
-  // Notification cancellation
   const handleCancelNotification = async () => {
     if (!notificationId) {
-      Alert.alert("Error", "No notification to cancel.");
+      showAlert("Error", "No notification to cancel.", "#e74c3c");
       return;
     }
 
     try {
       await Notifications.cancelScheduledNotificationAsync(notificationId);
-      Alert.alert("Success", "Notification canceled successfully.");
-      setNotificationId(null); // Clear the notification ID in state
-      setIsCancelButtonDisabled(true); // Disable the button after cancellation
+      showAlert("Success", "Notification canceled successfully.", "#27ae60");
+      setNotificationId(null);
+      setIsCancelButtonDisabled(true);
     } catch (error) {
       console.error("Error canceling notification:", error);
-      Alert.alert("Error", "Failed to cancel notification.");
+      showAlert("Error", "Failed to cancel notification.", "#e74c3c");
     }
   };
 
   const handleUpdateProfile = async () => {
     if (!username || !age || !recurrencePeriod) {
-      Alert.alert("Error", "Username, age, and recurrence period are required.");
+      showAlert("Error", "Username, age, and recurrence period are required.", "#e74c3c");
       return;
     }
 
     try {
-      // Cancel existing notification if recurrence period changes
       if (notificationId) {
         await cancelNotification(notificationId);
       }
 
-      // Schedule new notification
       const newNotificationId = await scheduleRecurringNotification2(
         parseInt(recurrencePeriod),
         userId
       );
 
-      // Update database (excluding creatinine_base_level)
       await db.runAsync(
         `UPDATE users 
          SET username = ?, 
@@ -104,177 +110,268 @@ const ProfileScreen = ({ route }) => {
         [username, age, recurrencePeriod, newNotificationId, userId]
       );
 
-      // Update local state
       setNotificationId(newNotificationId);
       setIsCancelButtonDisabled(false);
-
-      Alert.alert("Success", "Profile updated successfully.");
+      showAlert("Success", "Profile updated successfully.", "#27ae60");
     } catch (error) {
       console.error("Error updating profile:", error);
-      Alert.alert("Error", "Failed to update profile");
+      showAlert("Error", "Failed to update profile", "#e74c3c");
     }
   };
 
-  // Handle recurrence period change
   const handleUpdateRecurrence = async (newPeriod) => {
     const period = parseInt(newPeriod);
 
     if (isNaN(period) || period < 1) {
-      Alert.alert("Error", "Recurrence period must be at least 1 month.");
+      showAlert("Error", "Recurrence period must be at least 1 month.", "#e74c3c");
       return;
     }
 
     try {
-      // Cancel existing notification
       if (notificationId) {
         await cancelNotification(notificationId);
       }
 
-      // Schedule new notification
       const newNotificationId = await scheduleRecurringNotification2(period, userId);
 
-      // Update database
       await db.runAsync(
         'UPDATE users SET recurrence_period = ?, notification_id = ? WHERE id = ?',
         [period, newNotificationId, userId]
       );
 
-      // Update local state
       setRecurrencePeriod(period.toString());
       setNotificationId(newNotificationId);
       setIsCancelButtonDisabled(false);
-
-      Alert.alert('Success', 'Reminder schedule updated successfully');
+      showAlert("Success", "Reminder schedule updated successfully", "#27ae60");
     } catch (error) {
       console.error('Error updating reminder:', error);
-      Alert.alert('Error', error.message || 'Failed to update reminder schedule');
+      showAlert("Error", error.message || 'Failed to update reminder schedule', "#e74c3c");
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <Image
-        source={require("../../assets/images/user.jpg")}
-        style={styles.icon}
-      />
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Profile Settings</Text>
+        <View style={styles.headerDivider} />
+      </View>
 
-      <Text style={styles.label}>Username:</Text>
-      <TextInput 
-        style={styles.input} 
-        value={username} 
-        onChangeText={setUsername}
-      />
+      {/* Form Section */}
+      <View style={styles.formCard}>
+        <Text style={styles.sectionTitle}>Personal Information</Text>
+        
+        <Text style={styles.label}>Username</Text>
+        <TextInput
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
+          placeholder="Enter your username"
+          placeholderTextColor="#95a5a6"
+        />
 
-      <Text style={styles.label}>Age:</Text>
-      <TextInput 
-        style={styles.input} 
-        value={age} 
-        onChangeText={setAge} 
-        keyboardType="numeric"
-      />
+        <Text style={styles.label}>Age</Text>
+        <TextInput
+          style={styles.input}
+          value={age}
+          onChangeText={setAge}
+          keyboardType="numeric"
+          placeholder="Enter your age"
+          placeholderTextColor="#95a5a6"
+        />
 
-      <Text style={styles.label}>Recurrence Period (months):</Text>
-      <TextInput
-        style={styles.input}
-        value={recurrencePeriod}
-        onChangeText={(text) => {
-          if (/^\d*$/.test(text) && (text === "" || parseInt(text) > 0)) {
-            setRecurrencePeriod(text);
-            if (text) handleUpdateRecurrence(text);
-          }
-        }}
-        keyboardType="numeric"
-      />
+        <Text style={styles.sectionTitle}>Notification Settings</Text>
+        
+        <Text style={styles.label}>Reminder Frequency (months)</Text>
+        <TextInput
+          style={styles.input}
+          value={recurrencePeriod}
+          onChangeText={(text) => {
+            if (/^\d*$/.test(text) && (text === "" || parseInt(text) > 0)) {
+              setRecurrencePeriod(text);
+              if (text) handleUpdateRecurrence(text);
+            }
+          }}
+          keyboardType="numeric"
+          placeholder="e.g., 3"
+          placeholderTextColor="#95a5a6"
+        />
 
-      <Text style={styles.label}>Creatinine Base Level:</Text>
-      <TextInput
-        style={styles.input}
-        value={creatinineBaseLevel}
-        onChangeText={setCreatinineBaseLevel}
-        keyboardType="numeric"
-        editable={false} // Disable editing
-      />
+        <Text style={styles.label}>Creatinine Base Level</Text>
+        <TextInput
+          style={[styles.input, styles.disabledInput]}
+          value={creatinineBaseLevel}
+          editable={false}
+        />
+      </View>
 
-      {/* Cancel Notification Button */}
-      <TouchableOpacity
-        style={[
-          styles.cancelButton,
-          isCancelButtonDisabled && styles.disabledButton,
-        ]}
-        onPress={handleCancelNotification}
-        disabled={isCancelButtonDisabled}
+      {/* Action Buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.cancelButton,
+            isCancelButtonDisabled && styles.disabledButton
+          ]}
+          onPress={handleCancelNotification}
+          disabled={isCancelButtonDisabled}
+        >
+          <Text style={styles.buttonText}>Cancel Reminders</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.saveButton]}
+          onPress={handleUpdateProfile}
+        >
+          <Text style={styles.buttonText}>Save Changes</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal Alert */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Text style={styles.buttonText}>Cancel Notification</Text>
-      </TouchableOpacity>
-
-      {/* Update Profile Button */}
-      <TouchableOpacity style={styles.updateButton} onPress={handleUpdateProfile}>
-        <Text style={styles.buttonText}>Update Profile</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { borderTopColor: modalContent.color }]}>
+            <Text style={styles.modalTitle}>{modalContent.title}</Text>
+            <Text style={styles.modalMessage}>{modalContent.message}</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: modalContent.color }]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
-    backgroundColor: "#fff" 
+  container: {
+    flexGrow: 1,
+    padding: 16,
+    backgroundColor: "#f5f7fa",
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: "bold", 
-    marginBottom: 20, 
-    marginTop: 20,
-    textAlign: "center" 
+  header: {
+    marginBottom: 20,
   },
-  label: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    marginTop: 10 
+  headerTitle: {
+    fontSize: 25,
+    fontWeight: "600",
+    color: "#2c3e50",
+    textAlign: "center",
+  },
+ 
+  formCard: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#3498db",
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  label: {
+    fontSize: 14,
+    color: "#3b3b3b",
+    marginBottom: 6,
+    fontWeight: "500",
   },
   input: {
+    height: 48,
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 5,
+    borderColor: "#8e9394",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    fontSize: 16,
+    backgroundColor: "#ffffff",
+    color: "#2c3e50",
+  },
+  disabledInput: {
+    backgroundColor: "#f5f7fa",
+    color: "#95a5a6",
+  },
+  buttonContainer: {
+    flexDirection: "column",
+    gap: 12,
+  },
+  button: {
+    height: 48,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  saveButton: {
+    backgroundColor: "#3498db",
+  },
+  cancelButton: {
+    backgroundColor: "#27ae60",
+  },
+  disabledButton: {
+    backgroundColor: "#bdc3c7",
   },
   buttonText: {
     color: "white",
-    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalCard: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 24,
+    borderTopWidth: 4,
+  },
+  modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#2c3e50",
+    marginBottom: 12,
+    textAlign: "center",
   },
-  updateButton: {
-    backgroundColor: "#0693e3",
-    padding: 10,
-    marginVertical: 10,
-    width: "90%",
-    borderRadius: 5,
-    marginTop: 5,
-    alignSelf: "center",
-  },
-  icon: {
-    width: 100,
-    height: 100,
+  modalMessage: {
+    fontSize: 15,
+    color: "#7f8c8d",
     marginBottom: 20,
-    alignSelf: "center",
-    borderRadius: 50,
+    textAlign: "center",
+    lineHeight: 22,
   },
-  cancelButton: {
-    backgroundColor: "#4CAF50",
-    padding: 10,
-    marginVertical: 10,
-    width: "90%",
-    borderRadius: 5,
-    marginTop: 10,
-    alignSelf: "center",
+  modalButton: {
+    padding: 12,
+    borderRadius: 6,
+    marginTop: 8,
   },
-  disabledButton: {
-    backgroundColor: "#ccc",
-    opacity: 0.6,
+  modalButtonText: {
+    color: "white",
+    fontWeight: "600",
+    textAlign: "center",
+    fontSize: 16,
   },
 });
 

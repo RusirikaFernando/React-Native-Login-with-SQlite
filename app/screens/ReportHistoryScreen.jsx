@@ -7,7 +7,7 @@ import {
   Image,
   StyleSheet,
   Modal,
-  Alert
+  ScrollView
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -21,8 +21,18 @@ const ReportHistoryScreen = () => {
   const { userId } = route.params;
   
   const [reports, setReports] = useState([]);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [alertContent, setAlertContent] = useState({
+    title: "",
+    message: "",
+    color: "#3498db"
+  });
+
+  const showAlert = (title, message, color = "#3498db") => {
+    setAlertContent({ title, message, color });
+    setModalVisible(true);
+  };
 
   const fetchReports = async () => {
     try {
@@ -41,6 +51,7 @@ const ReportHistoryScreen = () => {
       setReports(results);
     } catch (error) {
       console.error("Error fetching reports:", error);
+      showAlert("Error", "Failed to load reports", "#e74c3c");
     }
   };
 
@@ -61,213 +72,285 @@ const ReportHistoryScreen = () => {
       }
       
       await fetchReports();
-      Alert.alert("Success", "Report deleted successfully!");
+      showAlert("Success", "Report deleted successfully", "#27ae60");
       await calculateAndUpdateBaseLevel(db, userId);
     } catch (error) {
       console.error("Delete error:", error);
-      Alert.alert("Error", "Failed to delete report. Please check your internet connection or try again later.");
+      showAlert("Error", "Failed to delete report", "#e74c3c");
     }
   };
 
-  const confirmDelete = (report) => {
-    setSelectedReport(report);
-    setDeleteModalVisible(true);
-  };
-
   const renderReportItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.reportItem}
-      onPress={() => navigation.navigate('ReportPreview', { report: item })}
-    >
-      <View style={styles.reportContent}>
-        <Text>Date: {item.formattedDate}</Text>
-        <Text>Month: {item.month}</Text>
-        <Text>Creatinine: {item.serumCreatinine}</Text>
-      </View>
-      <View style={styles.imageContainer}>
-        {item.image_uri ? (
-          <Image source={{ uri: item.image_uri }} style={styles.thumbnail} />
-        ) : (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>No Image</Text>
-          </View>
-        )}
-        <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={() => confirmDelete(item)}
-        >
-          <Text style={styles.deleteButtonText}>✕</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+    <View style={styles.reportCard}>
+      <TouchableOpacity 
+        onPress={() => navigation.navigate('ReportPreview', { report: item })}
+        style={styles.reportContent}
+      >
+        <View style={styles.reportDetails}>
+          <Text style={styles.reportDate}>{item.formattedDate}</Text>
+          <Text style={styles.reportMonth}>Month: {item.month}</Text>
+          <Text style={styles.reportCreatinine}>
+            Creatinine: <Text style={styles.creatinineValue}>{item.serumCreatinine} mg/dL</Text>
+          </Text>
+        </View>
+        
+        <View style={styles.imageSection}>
+          {item.image_uri ? (
+            <Image source={{ uri: item.image_uri }} style={styles.thumbnail} />
+          ) : (
+            <View style={styles.placeholder}>
+              <Text style={styles.placeholderText}>No Image</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.deleteButton}
+        onPress={() => {
+          setSelectedReport(item);
+          showAlert("Confirm Delete", `Delete report from ${item.formattedDate}?`, "#e74c3c");
+        }}
+      >
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
-    <View style={styles.container}>
-      {/* Add the "Previous Report History" topic */}
-      <Text style={styles.sectionTitle}>Previous Report History</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Report History</Text>
+        <View style={styles.headerDivider} />
+      </View>
 
-      <FlatList
-        data={reports}
-        keyExtractor={(item) => item.report_id.toString()}
-        renderItem={renderReportItem}
-        ListEmptyComponent={<Text>No reports found</Text>}
-        contentContainerStyle={styles.listContent}
-      />
+      {reports.length > 0 ? (
+        <FlatList
+          data={reports}
+          keyExtractor={(item) => item.report_id.toString()}
+          renderItem={renderReportItem}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No reports available</Text>
+          <Text style={styles.emptySubtext}>Add your first report to see history</Text>
+        </View>
+      )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Alert Modal */}
       <Modal
-        transparent
-        visible={deleteModalVisible}
-        onRequestClose={() => setDeleteModalVisible(false)}
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete Report</Text>
-            <Text style={styles.modalText}>
-              Are you sure you want to delete this report?
-            </Text>
-            <Text style={styles.reportDetails}>
-              Date: {selectedReport?.formattedDate}
-            </Text>
-            <Text style={styles.reportDetails}>
-              Creatinine: {selectedReport?.serumCreatinine}
-            </Text>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { borderTopColor: alertContent.color }]}>
+            <Text style={styles.modalTitle}>{alertContent.title}</Text>
+            <Text style={styles.modalMessage}>{alertContent.message}</Text>
             
+            {alertContent.title === "Confirm Delete" && (
+              <Text style={styles.reportDetails}>
+                Creatinine: {selectedReport?.serumCreatinine} mg/dL
+              </Text>
+            )}
+
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setDeleteModalVisible(false)}
+                onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.buttonText}>Cancel</Text>
+                <Text style={styles.modalButtonText}>Dismiss</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmDeleteButton]}
-                onPress={() => {
-                  setDeleteModalVisible(false);
-                  handleDeleteReport(selectedReport?.report_id, selectedReport?.image_uri);
-                }}
-              >
-                <Text style={styles.buttonText}>Delete</Text>
-              </TouchableOpacity>
+              
+              {alertContent.title === "Confirm Delete" && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={() => {
+                    setModalVisible(false);
+                    handleDeleteReport(selectedReport?.report_id, selectedReport?.image_uri);
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Delete</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#f5f7fa",
   },
-  sectionTitle: {
+  header: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#800080', // Purple color
-    marginTop: 30,
-    marginBottom: 16,
-    marginLeft: 16,
-    textAlign:"center"
+    fontWeight: "600",
+    color: "#2c3e50",
+    textAlign: "center",
+  },
+  headerDivider: {
+    height: 2,
+    backgroundColor: "#3498db",
+    width: "30%",
+    alignSelf: "center",
+    marginTop: 10,
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-  reportItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: "#f8f8f8",
-    borderRadius: 8,
+  reportCard: {
+    backgroundColor: "white",
+    borderRadius: 10,
     padding: 16,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   reportContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  reportDetails: {
     flex: 1,
   },
-  imageContainer: {
-    alignItems: 'center',
-    marginLeft: 12,
+  reportDate: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2c3e50",
+    marginBottom: 4,
+  },
+  reportMonth: {
+    fontSize: 14,
+    color: "#7f8c8d",
+    marginBottom: 4,
+  },
+  reportCreatinine: {
+    fontSize: 14,
+    color: "#7f8c8d",
+  },
+  creatinineValue: {
+    color: "#3498db",
+    fontWeight: "600",
+  },
+  imageSection: {
+    marginLeft: 16,
+    alignItems: "center",
   },
   thumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: 6,
-    marginBottom: 8,
+    width: 60,
+    height: 60,
+    borderRadius: 8,
   },
   placeholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 6,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: "#ecf0f1",
+    justifyContent: "center",
+    alignItems: "center",
   },
   placeholderText: {
-    color: '#666',
+    color: "#95a5a6",
     fontSize: 12,
   },
   deleteButton: {
-    padding: 4,
+    marginTop: 12,
+    padding: 10,
+    backgroundColor: "#f8d7da",
+    borderRadius: 6,
+    alignItems: "center",
   },
   deleteButtonText: {
-    color: 'red',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    color: "#dc3545",
+    fontWeight: "600",
   },
-  modalContainer: {
+  emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
   },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
+  emptyText: {
+    fontSize: 18,
+    color: "#767577",
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#95a5a6",
+    textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalCard: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 24,
+    borderTopWidth: 4,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#2c3e50",
+    marginBottom: 12,
+    textAlign: "center",
   },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 24,
-    textAlign: 'center',
+  modalMessage: {
+    fontSize: 15,
+    color: "#7f8c8d",
+    marginBottom: 16,
+    textAlign: "center",
+    lineHeight: 22,
   },
   reportDetails: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-    textAlign: 'center',
+    color: "#2c3e50",
+    textAlign: "center",
+    marginBottom: 20,
+    fontWeight: "500",
   },
   modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
   },
   modalButton: {
     flex: 1,
     padding: 12,
     borderRadius: 6,
-    alignItems: 'center',
     marginHorizontal: 4,
   },
   cancelButton: {
-    backgroundColor: '#cccccc',
+    backgroundColor: "#6c757d",
   },
-  confirmDeleteButton: {
-    backgroundColor: '#ff4444',
+  confirmButton: {
+    backgroundColor: "#dc3545",
   },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  modalButtonText: {
+    color: "white",
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
 

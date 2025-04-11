@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet ,TouchableOpacity,Image} from "react-native";
-import { scheduleRecurringNotification } from "../../Services/notifications";
+import { View, Text, TextInput, StyleSheet ,TouchableOpacity,Image, Modal, Pressable} from "react-native";
 
 const OnboardingRecurrence = ({ navigation, route }) => {
   const { userId, age } = route.params;
   const [recurrence, setRecurrence] = useState("");
+  const [alertVisible, setAlertVisible] = useState(false);
 
   const handleNext = () => {
     if (!recurrence) {
-      alert("Please enter recurrence period");
+      setAlertVisible(true);
       return;
     }
   
@@ -23,14 +23,18 @@ const OnboardingRecurrence = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
        {/* App Icon */}
-       <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+       <Image source={require("../../assets/images/app-icon.png")} style={styles.icon} />
 
 {/* Welcome Message */}
 <Text style={styles.welcomeText}>Creatinine Care</Text>
       <Text style={styles.title}>Enter Test Recurrence Period</Text>
+      <Text style={styles.description}>
+        This is the number of months until the patient’s next routine checkup.
+        It helps us remind you on time.
+      </Text>
       <TextInput
         style={styles.input}
-        placeholder="Number of months"
+        placeholder="e.g. 2 months"
         keyboardType="numeric"
         value={recurrence}
         onChangeText={setRecurrence}
@@ -44,6 +48,24 @@ const OnboardingRecurrence = ({ navigation, route }) => {
         <Text style={styles.buttonText}>Back</Text>
       </TouchableOpacity>
       
+ {/* Alert Modal */}
+ <Modal
+        visible={alertVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.alertBox, styles.warningBorder]}>
+            <Text style={styles.alertTitle}>Attention</Text>
+            <Text style={styles.alertMessage}>Please enter recurrence period.</Text>
+            <Pressable style={styles.closeButton} onPress={() => setAlertVisible(false)}>
+              <Text style={styles.closeButtonText}>OK</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
@@ -59,7 +81,7 @@ const styles = StyleSheet.create({
     width: "80%",
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#9c9c9c",
     marginVertical: 5,
     borderRadius: 5,
   },
@@ -74,6 +96,13 @@ const styles = StyleSheet.create({
     height: 100,
     marginBottom: 20,
     marginTop: -150,
+  },
+  description: {
+    fontSize: 14,
+    color: "#767577",
+    textAlign: "center",
+    marginBottom: 20,
+    marginHorizontal: 20,
   },
   nextButton: {
     position: "absolute",
@@ -102,6 +131,45 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: "30%",
     alignItems: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alertBox: {
+    width: "80%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+  warningBorder: {
+    borderColor: "#e67e22",
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#e67e22",
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  closeButton: {
+    backgroundColor: "#3498db",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
   },
 });
 
