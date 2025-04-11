@@ -7,9 +7,14 @@ import {
   StyleSheet,
   BackHandler,
   Image,
+  Modal,
+  Pressable,
 } from "react-native";
 
 const OnboardingAge = ({ navigation, route }) => {
+  const [alertVisible, setAlertVisible] = useState(false);
+
+
   useEffect(() => {
     const backAction = () => {
       return true; // Prevents going back
@@ -28,7 +33,7 @@ const OnboardingAge = ({ navigation, route }) => {
 
   const handleNext = () => {
     if (!age) {
-      alert("Please enter the patient's age.");
+      setAlertVisible(true);
       return;
     }
     navigation.navigate("OnboardingRecurrence", { userId, age });
@@ -37,7 +42,7 @@ const OnboardingAge = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       {/* App Icon */}
-      <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
+      <Image source={require("../../assets/images/app-icon.png")} style={styles.icon} />
 
       {/* Welcome Message */}
       <Text style={styles.welcomeText}>Creatinine Care</Text>
@@ -54,6 +59,28 @@ const OnboardingAge = ({ navigation, route }) => {
       <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
         <Text style={styles.buttonText}>Next</Text>
       </TouchableOpacity>
+
+  {/* Alert Modal */}
+  <Modal
+        visible={alertVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.alertBox, styles.warningBorder]}>
+            <Text style={styles.alertTitle}>Attention</Text>
+            <Text style={styles.alertMessage}>Please enter the patient's age.</Text>
+            <Pressable
+              style={styles.closeButton}
+              onPress={() => setAlertVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>OK</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
@@ -101,6 +128,45 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alertBox: {
+    width: "80%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+  warningBorder: {
+    borderColor: "#e67e22",
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#e67e22",
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  closeButton: {
+    backgroundColor: "#3498db",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
   },
 });
 

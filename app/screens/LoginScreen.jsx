@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { 
-  Pressable, 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  Alert, 
-  Image 
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  Modal,
+  Image,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
@@ -14,6 +14,7 @@ const LoginScreen = ({ navigation }) => {
   const db = useSQLiteContext();
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
 
   // Simple hash function
   const simpleHash = (str) => {
@@ -28,7 +29,7 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (userName.length === 0 || password.length === 0) {
-      Alert.alert("Attention!", "Please enter both username and password");
+      setModalVisible("empty");
       return;
     }
     try {
@@ -38,29 +39,35 @@ const LoginScreen = ({ navigation }) => {
       );
 
       if (user) {
-        Alert.alert("Success", "Login Successful");
-        navigation.navigate("Home", { userId: user.id });
-        setUserName("");
-        setPassword("");
+        setModalVisible("success");
+        setTimeout(() => {
+          setModalVisible(false);
+          navigation.navigate("Home", { userId: user.id });
+          setUserName("");
+          setPassword("");
+        }, 1200); // delay before navigating
       } else {
-        Alert.alert("Error", "Invalid username or password!");
+        setModalVisible("invalid");
       }
     } catch (error) {
       console.log("Error during login:", error);
-      Alert.alert("Error", "Login failed. Please try again.");
+      setModalVisible("fail");
     }
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
   };
 
   return (
     <View style={styles.container}>
-      {/* App Icon */}
-      <Image source={require("../../assets/images/app-icon.jpg")} style={styles.icon} />
-
-      {/* Welcome Message */}
+      <Image
+        source={require("../../assets/images/app-icon.png")}
+        style={styles.icon}
+      />
       <Text style={styles.welcomeText}>Welcome to Creatinine Care</Text>
-
       <Text style={styles.title}>Login</Text>
-      
+
       <TextInput
         style={styles.input}
         placeholder="Username"
@@ -74,14 +81,65 @@ const LoginScreen = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
       />
-      
+
       <Pressable style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </Pressable>
-      
+
       <Pressable style={styles.link} onPress={() => navigation.navigate("Register")}>
         <Text style={styles.linkText}>Don't have an account? Register</Text>
       </Pressable>
+
+      {/* Success & Error Modal */}
+      <Modal
+        visible={modalVisible !== false}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.alertBox,
+              modalVisible === "success"
+                ? styles.successBorder
+                : styles.errorBorder,
+            ]}
+          >
+            <Text
+              style={[
+                styles.alertTitle,
+                modalVisible === "success"
+                  ? styles.successText
+                  : styles.errorText,
+              ]}
+            >
+              {modalVisible === "success"
+                ? "Login Successful"
+                : modalVisible === "invalid"
+                ? "Invalid Credentials"
+                : modalVisible === "empty"
+                ? "Missing Fields"
+                : "Login Failed"}
+            </Text>
+            <Text style={styles.alertMessage}>
+              {modalVisible === "success"
+                ? "Welcome back!"
+                : modalVisible === "invalid"
+                ? "Invalid username or password."
+                : modalVisible === "empty"
+                ? "Please fill in all fields."
+                : "Something went wrong. Please try again."}
+            </Text>
+
+            {modalVisible !== "success" && (
+              <Pressable style={styles.closeButton} onPress={closeModal}>
+                <Text style={styles.closeButtonText}>OK</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -118,7 +176,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   button: {
-    backgroundColor: "blue",
+    backgroundColor: "#3498db",
     padding: 10,
     marginVertical: 10,
     width: "80%",
@@ -133,7 +191,56 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   linkText: {
-    color: "blue",
+    color: "#555",
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alertBox: {
+    width: "80%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  closeButton: {
+    backgroundColor: "#3498db",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  successBorder: {
+    borderColor: "#27ae60",
+  },
+  errorBorder: {
+    borderColor: "#e74c3c",
+  },
+  successText: {
+    color: "#27ae60",
+  },
+  errorText: {
+    color: "#e74c3c",
   },
 });
 

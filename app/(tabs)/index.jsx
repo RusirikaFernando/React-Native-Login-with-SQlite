@@ -4,9 +4,18 @@ import {
   DrawerItemList,
   DrawerItem,
 } from "@react-navigation/drawer";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
-import { useEffect } from "react";
-import { SQLiteProvider, useSQLiteContext } from "expo-sqlite";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  Modal,
+  Pressable,
+  StyleSheet,
+} from "react-native";
+import {
+  SQLiteProvider,
+  useSQLiteContext,
+} from "expo-sqlite";
 import {
   NavigationContainer,
   NavigationIndependentTree,
@@ -14,6 +23,7 @@ import {
 } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { initializeDatabase } from "../../Database/database";
+
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
@@ -32,38 +42,24 @@ import * as Notifications from "expo-notifications";
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
-//handle logout
+// Custom Drawer with styled logout modal
 function CustomDrawerContent(props) {
   const db = useSQLiteContext();
   const navigation = useNavigation();
+  const [logoutVisible, setLogoutVisible] = useState(false);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Logout",
-          onPress: async () => {
-            try {
-              const userId = props.state.routes[0].params?.userId;
-              await db.runAsync(`DELETE FROM users WHERE id = ?`, [userId]);
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            } catch (error) {
-              console.log("Error during logout:", error);
-            }
-          },
-        },
-      ],
-      { cancelable: false }
-    );
+  const handleLogoutConfirm = async () => {
+    try {
+      const userId = props.state.routes[0].params?.userId;
+      await db.runAsync(`DELETE FROM users WHERE id = ?`, [userId]);
+      setLogoutVisible(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch (error) {
+      console.log("Error during logout:", error);
+    }
   };
 
   return (
@@ -72,13 +68,46 @@ function CustomDrawerContent(props) {
         <DrawerItemList {...props} />
       </View>
       <View style={{ borderTopWidth: 1, borderTopColor: "#ccc" }}>
-        <DrawerItem label="Logout" onPress={handleLogout} />
+        <DrawerItem label="Logout" onPress={() => setLogoutVisible(true)} />
       </View>
+
+      {/* Logout Modal */}
+      <Modal
+        visible={logoutVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.alertBox, styles.logoutBorder]}>
+            <Text style={styles.logoutTitle}>Logout</Text>
+            <Text style={styles.alertMessage}>
+              Are you sure you want to logout?
+            </Text>
+
+            <View style={styles.buttonRow}>
+              <Pressable
+                style={[styles.closeButton, styles.cancelButton]}
+                onPress={() => setLogoutVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.closeButton, styles.logoutButton]}
+                onPress={handleLogoutConfirm}
+              >
+                <Text style={styles.closeButtonText}>Logout</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </DrawerContentScrollView>
   );
 }
 
-// Create a Home stack that includes the drawer
+// Drawer stack
 function HomeStack({ route }) {
   const { userId } = route.params;
 
@@ -104,37 +133,30 @@ function HomeStack({ route }) {
         name="Home"
         component={HomeScreen}
         initialParams={{ userId }}
-        options={{
-          headerShown: true,
-        }}
+        options={{ headerShown: true }}
       />
       <Drawer.Screen
         name="Profile"
         component={ProfileScreen}
         initialParams={{ userId }}
-        options={{
-          headerShown: true,
-        }}
+        options={{ headerShown: true }}
       />
       <Drawer.Screen
         name="Debug DB"
         component={DebugScreen}
         initialParams={{ userId }}
-        options={{
-          headerShown: true,
-        }}
+        options={{ headerShown: true }}
       />
       <Drawer.Screen
         name="Notification Test"
         component={NotificationTestScreen}
-        options={{
-          headerShown: true,
-        }}
+        options={{ headerShown: true }}
       />
     </Drawer.Navigator>
   );
 }
 
+// App wrapper
 export default function App() {
   useEffect(() => {
     const requestPermissions = async () => {
@@ -173,17 +195,14 @@ export default function App() {
             <Stack.Screen
               name="Login"
               component={LoginScreen}
-              options={{
-                headerLeft: () => null,
-                headerShown: true, // Ensure individual screen headers are shown
-              }}
+              options={{ headerLeft: () => null, headerShown: true }}
             />
             <Stack.Screen
               name="Register"
               component={RegisterScreen}
               options={{
                 headerLeft: () => null,
-                headerBackVisible: false, // Ensures no back button appears
+                headerBackVisible: false,
               }}
             />
             <Stack.Screen
@@ -191,7 +210,7 @@ export default function App() {
               component={OnboardingAge}
               options={{
                 headerLeft: () => null,
-                headerBackVisible: false, // Ensures no back button appears
+                headerBackVisible: false,
               }}
             />
             <Stack.Screen
@@ -205,42 +224,27 @@ export default function App() {
             <Stack.Screen
               name="ReportPreview"
               component={ReportPreviewScreen}
-              options={{
-                title: "Report Details",
-                headerShown: true,
-              }}
+              options={{ title: "Report Details", headerShown: true }}
             />
             <Stack.Screen
               name="ReportHistory"
               component={ReportHistoryScreen}
-              options={{
-                title: "Report History",
-                headerShown: true,
-              }}
+              options={{ title: "Report History", headerShown: true }}
             />
             <Stack.Screen
               name="Chart"
               component={ChartScreen}
-              options={{
-                title: "Creatinine Trend",
-                headerShown: true,
-              }}
+              options={{ title: "Creatinine Trend", headerShown: true }}
             />
             <Stack.Screen
               name="EGFR"
               component={EGFRScreen}
-              options={{
-                title: "eGFR Calculator",
-                headerShown: true,
-              }}
+              options={{ title: "eGFR Calculator", headerShown: true }}
             />
-
             <Stack.Screen
               name="Home"
               component={HomeStack}
-              options={{
-                headerShown: false,
-              }}
+              options={{ headerShown: false }}
             />
           </Stack.Navigator>
         </NavigationContainer>
@@ -248,3 +252,55 @@ export default function App() {
     </SQLiteProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alertBox: {
+    width: "80%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+  logoutBorder: {
+    borderColor: "#c0392b",
+  },
+  logoutTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#c0392b",
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 15,
+  },
+  closeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+  },
+  logoutButton: {
+    backgroundColor: "#c0392b",
+  },
+  cancelButton: {
+    backgroundColor: "#95a5a6",
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+});
