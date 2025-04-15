@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "MyApp",
+    "name": "Creatinine Care",
     "slug": "MyApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon.png",
+    "icon": "./assets/images/loading-icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
